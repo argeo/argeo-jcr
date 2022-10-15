@@ -7,6 +7,7 @@ A2_CATEGORY = org.argeo.cms.jcr
 BUNDLES = \
 org.argeo.cms.jcr \
 org.argeo.cms.jcr.ui \
+org.argeo.cms.jcr.e4 \
 
 DEP_CATEGORIES = \
 org.argeo.tp \
