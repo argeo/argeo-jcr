@@ -1,0 +1,9 @@
+<node = 'http://www.argeo.org/ns/node'>
+
+[node:userHome]
+mixin
+- ldap:uid (STRING) m
+
+[node:groupHome]
+mixin
+- ldap:cn (STRING) m

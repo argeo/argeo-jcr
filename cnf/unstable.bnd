@@ -1,0 +1,6 @@
+MAJOR=2
+MINOR=3
+MICRO=9
+qualifier=.next
+
+Bundle-RequiredExecutionEnvironment=JavaSE-11

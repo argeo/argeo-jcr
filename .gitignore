@@ -1,0 +1,4 @@
+**/bin/
+**/MANIFEST.MF
+/sdk.mk
+/output/
