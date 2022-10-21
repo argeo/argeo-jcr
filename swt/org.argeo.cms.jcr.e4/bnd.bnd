@@ -1,3 +1,5 @@
+Bundle-ActivationPolicy: lazy
+
 Import-Package: \
 org.eclipse.swt,\
 org.eclipse.swt.widgets;version="0.0.0",\
@@ -10,3 +12,7 @@ org.apache.jackrabbit.*;version="[2,3)",\
 org.argeo.cms,\
 org.argeo.jcr,\
 *
+
+Service-Component: OSGI-INF/homeRepository.xml,\
+OSGI-INF/userAdminWrapper.xml,\
+OSGI-INF/cmsAdminRap.xml,\
