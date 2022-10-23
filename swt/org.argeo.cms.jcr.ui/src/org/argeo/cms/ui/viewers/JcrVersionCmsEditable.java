@@ -1,11 +1,13 @@
 package org.argeo.cms.ui.viewers;
 
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.nodetype.NodeType;
 import javax.jcr.version.VersionManager;
 
+import org.argeo.api.cms.CmsLog;
 import org.argeo.api.cms.ux.CmsEditionEvent;
 import org.argeo.cms.ux.AbstractCmsEditable;
 import org.argeo.jcr.JcrException;
@@ -17,6 +19,8 @@ import org.eclipse.swt.widgets.Listener;
 
 /** Provides the CmsEditable semantic based on JCR versioning. */
 public class JcrVersionCmsEditable extends AbstractCmsEditable {
+	private final static CmsLog log = CmsLog.getLog(JcrVersionCmsEditable.class);
+
 	private final String nodePath;// cache
 	private final VersionManager versionManager;
 	private final Boolean canEdit;
@@ -74,8 +78,8 @@ public class JcrVersionCmsEditable extends AbstractCmsEditable {
 		try {
 			versionManager.checkout(nodePath);
 //			setChanged();
-		} catch (RepositoryException e1) {
-			throw new JcrException("Cannot publish " + nodePath, e1);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot publish " + nodePath, e);
 		}
 		notifyListeners(new CmsEditionEvent(nodePath, CmsEditionEvent.START_EDITING, this));
 	}
@@ -85,8 +89,14 @@ public class JcrVersionCmsEditable extends AbstractCmsEditable {
 		try {
 			versionManager.checkin(nodePath);
 //			setChanged();
-		} catch (RepositoryException e1) {
-			throw new JcrException("Cannot publish " + nodePath, e1);
+		} catch (ItemNotFoundException e) {
+			// we ignore that the version was not found
+			// since it is most likely because the user doesn't have the rights
+			// on the whole workspace
+			if (log.isTraceEnabled())
+				log.trace("Cannot retrieve version after check in", e);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot publish " + nodePath, e);
 		}
 		notifyListeners(new CmsEditionEvent(nodePath, CmsEditionEvent.STOP_EDITING, this));
 	}
