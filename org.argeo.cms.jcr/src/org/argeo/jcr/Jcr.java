@@ -610,6 +610,23 @@ public class Jcr {
 	}
 
 	/**
+	 * Retrieve a {@link PropertyType#DATE} property as an {@link Instant}.
+	 * 
+	 * @return the property value, or <code>null</code> if not found.
+	 */
+	public static Instant getAsInstant(Node node, String property) {
+		try {
+			if (!node.hasProperty(property))
+				return null;
+			Calendar calendar = node.getProperty(property).getDate();
+			return calendar.getTime().toInstant();
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot get property " + property + " of " + node + " as an instant.", e);
+		}
+
+	}
+
+	/**
 	 * Get a multiple property as a list, doing a best effort to cast it as the
 	 * target list.
 	 * 
