@@ -1,4 +1,3 @@
-Bundle-Activator: org.argeo.cms.ui.internal.Activator
 Bundle-ActivationPolicy: lazy
 
 Import-Package: org.eclipse.swt,\
