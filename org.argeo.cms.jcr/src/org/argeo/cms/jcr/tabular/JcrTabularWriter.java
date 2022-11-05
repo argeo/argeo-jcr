@@ -12,12 +12,12 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
 import org.apache.commons.io.IOUtils;
+import org.argeo.api.acr.tabular.TabularColumn;
+import org.argeo.api.acr.tabular.TabularWriter;
 import org.argeo.cms.ArgeoTypes;
-import org.argeo.cms.tabular.TabularColumn;
-import org.argeo.cms.tabular.TabularWriter;
+import org.argeo.cms.util.CsvWriter;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
-import org.argeo.util.CsvWriter;
 
 /** Write / reference tabular content in a JCR repository. */
 public class JcrTabularWriter implements TabularWriter {

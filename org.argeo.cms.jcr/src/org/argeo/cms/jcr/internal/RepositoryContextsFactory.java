@@ -20,7 +20,7 @@ import org.argeo.cms.CmsDeployProperty;
 import org.argeo.cms.internal.jcr.RepoConf;
 import org.argeo.cms.internal.jcr.RepositoryBuilder;
 import org.argeo.cms.jcr.internal.osgi.CmsJcrActivator;
-import org.argeo.util.LangUtils;
+import org.argeo.cms.util.LangUtils;
 import org.osgi.service.cm.ManagedServiceFactory;
 
 /** A {@link ManagedServiceFactory} creating or referencing JCR repositories. */

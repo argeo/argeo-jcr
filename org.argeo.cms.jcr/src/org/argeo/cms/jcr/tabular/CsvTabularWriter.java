@@ -2,8 +2,8 @@ package org.argeo.cms.jcr.tabular;
 
 import java.io.OutputStream;
 
-import org.argeo.cms.tabular.TabularWriter;
-import org.argeo.util.CsvWriter;
+import org.argeo.api.acr.tabular.TabularWriter;
+import org.argeo.cms.util.CsvWriter;
 
 /** Write tabular content in a stream as CSV. Wraps a {@link CsvWriter}. */
 public class CsvTabularWriter implements TabularWriter {
