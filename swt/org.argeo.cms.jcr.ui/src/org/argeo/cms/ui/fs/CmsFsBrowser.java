@@ -18,7 +18,7 @@ import javax.jcr.Node;
 import javax.jcr.Repository;
 import javax.jcr.Session;
 
-import org.argeo.cms.auth.CurrentUser;
+import org.argeo.cms.CurrentUser;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.cms.swt.CmsException;
 import org.argeo.cms.swt.CmsSwtUtils;
