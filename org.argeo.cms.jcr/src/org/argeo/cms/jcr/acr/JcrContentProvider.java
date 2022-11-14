@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
@@ -89,11 +90,24 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		return mountPath;
 	}
 
+	public synchronized <T> T doInAdminSession(Function<Session, T> toDo) {
+		try {
+			return toDo.apply(adminSession);
+		} finally {
+			try {
+				if (adminSession.hasPendingChanges())
+					adminSession.save();
+			} catch (RepositoryException e) {
+				throw new JcrException("Cannot save admin session", e);
+			}
+		}
+	}
+
 	/*
 	 * NAMESPACE CONTEXT
 	 */
 	@Override
-	public String getNamespaceURI(String prefix) {
+	public synchronized String getNamespaceURI(String prefix) {
 		try {
 			return adminSession.getNamespaceURI(prefix);
 		} catch (RepositoryException e) {
@@ -102,7 +116,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	}
 
 	@Override
-	public String getPrefix(String namespaceURI) {
+	public synchronized String getPrefix(String namespaceURI) {
 		try {
 			return adminSession.getNamespacePrefix(namespaceURI);
 		} catch (RepositoryException e) {
@@ -111,7 +125,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	}
 
 	@Override
-	public Iterator<String> getPrefixes(String namespaceURI) {
+	public synchronized Iterator<String> getPrefixes(String namespaceURI) {
 		try {
 			return Arrays.asList(adminSession.getNamespacePrefix(namespaceURI)).iterator();
 		} catch (RepositoryException e) {
