@@ -49,11 +49,15 @@ public class Jcr {
 	/**
 	 * The name of a node which will be serialized as XML text, as per section 7.3.1
 	 * of the JCR 2.0 specifications.
+	 * 
+	 * @see Workspace#NAME_JCR_XMLTEXT
 	 */
 	public final static String JCR_XMLTEXT = "jcr:xmltext";
 	/**
 	 * The name of a property which will be serialized as XML text, as per section
 	 * 7.3.1 of the JCR 2.0 specifications.
+	 * 
+	 * @see Workspace#NAME_JCR_XMLCHARACTERS
 	 */
 	public final static String JCR_XMLCHARACTERS = "jcr:xmlcharacters";
 	/**

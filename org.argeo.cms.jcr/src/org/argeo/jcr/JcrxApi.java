@@ -67,7 +67,7 @@ public class JcrxApi {
 		try {
 			if (node.hasNode(name)) {
 				Node child = node.getNode(name);
-				setXmlValue(node, child, value);
+				setXmlValue(child, value);
 			} else
 				node.addNode(name, JcrxType.JCRX_XMLVALUE).addNode(Jcr.JCR_XMLTEXT, JcrxType.JCRX_XMLTEXT)
 						.setProperty(Jcr.JCR_XMLCHARACTERS, value);
@@ -76,7 +76,8 @@ public class JcrxApi {
 		}
 	}
 
-	public static void setXmlValue(Node node, Node child, String value) {
+	/** Set the value as XML characters. */
+	public static void setXmlValue(Node child, String value) {
 		try {
 			if (!child.hasNode(Jcr.JCR_XMLTEXT))
 				child.addNode(Jcr.JCR_XMLTEXT, JcrxType.JCRX_XMLTEXT);
