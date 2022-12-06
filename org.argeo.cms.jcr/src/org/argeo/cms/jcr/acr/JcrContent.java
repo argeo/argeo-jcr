@@ -257,12 +257,20 @@ public class JcrContent extends AbstractContent {
 	public <A> A adapt(Class<A> clss) {
 		if (Source.class.isAssignableFrom(clss)) {
 //			try {
-			PipedInputStream in = new PipedInputStream();
+			PipedOutputStream out = new PipedOutputStream();
+			PipedInputStream in;
+			try {
+				in = new PipedInputStream(out);
+			} catch (IOException e) {
+				throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
+			}
 
 			ForkJoinPool.commonPool().execute(() -> {
-				try (PipedOutputStream out = new PipedOutputStream(in)) {
+//				try (PipedOutputStream out = new PipedOutputStream(in)) {
+				try {
 					provider.getJcrSession(getSession(), jcrWorkspace).exportDocumentView(jcrPath, out, true, false);
 					out.flush();
+					out.close();
 				} catch (IOException | RepositoryException e) {
 					throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
 				}

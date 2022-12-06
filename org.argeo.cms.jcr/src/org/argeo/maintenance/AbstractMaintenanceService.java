@@ -10,13 +10,13 @@ import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
+import org.argeo.api.acr.ldap.Distinguished;
 import org.argeo.api.acr.spi.ProvidedRepository;
 import org.argeo.api.cms.CmsLog;
+import org.argeo.api.cms.transaction.WorkTransaction;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.jcr.Jcr;
 import org.argeo.jcr.JcrUtils;
-import org.argeo.util.naming.Distinguished;
-import org.argeo.util.transaction.WorkTransaction;
 import org.osgi.service.useradmin.Group;
 import org.osgi.service.useradmin.Role;
 import org.osgi.service.useradmin.UserAdmin;

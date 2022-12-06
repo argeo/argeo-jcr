@@ -1151,7 +1151,7 @@ public class JcrUtils {
 //				} catch (InterruptedException e1) {
 //					// ignore
 //				}
-				
+
 				workspaceSession = repository.login(credentials, workspaceName);
 			}
 			return workspaceSession;
@@ -1382,7 +1382,7 @@ public class JcrUtils {
 
 	/**
 	 * Convenience method for adding a single privilege to a principal (user or
-	 * role), typically jcr:all
+	 * role), typically jcr:all. Session is saved.
 	 */
 	public synchronized static void addPrivilege(Session session, String path, String principal, String privilege)
 			throws RepositoryException {

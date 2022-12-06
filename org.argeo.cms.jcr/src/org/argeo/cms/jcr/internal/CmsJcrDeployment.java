@@ -26,10 +26,12 @@ import javax.servlet.Servlet;
 import org.apache.jackrabbit.commons.cnd.CndImporter;
 import org.apache.jackrabbit.core.RepositoryContext;
 import org.apache.jackrabbit.core.RepositoryImpl;
+import org.argeo.api.acr.spi.ProvidedRepository;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.CmsLog;
 import org.argeo.cms.ArgeoNames;
 import org.argeo.cms.jcr.CmsJcrUtils;
+import org.argeo.cms.jcr.acr.JcrContentNamespace;
 import org.argeo.cms.jcr.internal.servlet.CmsRemotingServlet;
 import org.argeo.cms.jcr.internal.servlet.CmsWebDavServlet;
 import org.argeo.cms.jcr.internal.servlet.JcrHttpUtils;
@@ -62,9 +64,13 @@ public class CmsJcrDeployment {
 	// Readiness
 	private boolean nodeAvailable = false;
 
+	private ProvidedRepository contentRepository;
+
 //	CmsDeployment cmsDeployment;
 	public void start() {
 		dataModels = new DataModels(bc);
+
+		contentRepository.registerTypes(JcrContentNamespace.values());
 
 		ServiceTracker<?, ?> repoContextSt = new RepositoryContextStc();
 		repoContextSt.open();
@@ -72,7 +78,7 @@ public class CmsJcrDeployment {
 
 //		nodeDeployment = CmsJcrActivator.getService(NodeDeployment.class);
 
-		//JcrInitUtils.addToDeployment(cmsDeployment);
+		// JcrInitUtils.addToDeployment(cmsDeployment);
 
 //		contentRepository.registerTypes(NamespaceRegistry.PREFIX_JCR, NamespaceRegistry.NAMESPACE_JCR, null);
 //		contentRepository.registerTypes(NamespaceRegistry.PREFIX_MIX, NamespaceRegistry.NAMESPACE_MIX, null);
@@ -87,7 +93,6 @@ public class CmsJcrDeployment {
 	public void stop() {
 //		if (nodeHttp != null)
 //			nodeHttp.destroy();
-
 
 		try {
 			for (ServiceReference<JackrabbitLocalRepository> sr : bc
@@ -351,7 +356,8 @@ public class CmsJcrDeployment {
 
 	boolean isStandalone(String dataModelName) {
 		return true;
-		//return cmsDeployment.getProps(CmsConstants.NODE_REPOS_FACTORY_PID, dataModelName) != null;
+		// return cmsDeployment.getProps(CmsConstants.NODE_REPOS_FACTORY_PID,
+		// dataModelName) != null;
 	}
 
 	private void publishLocalRepo(String dataModelName, Repository repository) {
@@ -430,6 +436,10 @@ public class CmsJcrDeployment {
 		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
 				"(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH + "=" + CmsConstants.PATH_JCR + ")");
 		bc.registerService(Servlet.class, remotingServlet, ip);
+	}
+
+	public void setContentRepository(ProvidedRepository contentRepository) {
+		this.contentRepository = contentRepository;
 	}
 
 	private class RepositoryContextStc extends ServiceTracker<RepositoryContext, RepositoryContext> {

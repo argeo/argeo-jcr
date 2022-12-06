@@ -18,8 +18,8 @@ import javax.security.auth.login.LoginException;
 
 import org.argeo.api.cms.CmsAuth;
 import org.argeo.api.cms.CmsConstants;
+import org.argeo.cms.util.CurrentSubject;
 import org.argeo.jcr.JcrUtils;
-import org.argeo.util.CurrentSubject;
 
 /** Utilities related to Argeo model in JCR */
 public class CmsJcrUtils {

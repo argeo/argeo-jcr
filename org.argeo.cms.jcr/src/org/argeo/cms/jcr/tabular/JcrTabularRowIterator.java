@@ -13,13 +13,13 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 
 import org.apache.commons.io.IOUtils;
+import org.argeo.api.acr.tabular.ArrayTabularRow;
+import org.argeo.api.acr.tabular.TabularColumn;
+import org.argeo.api.acr.tabular.TabularRow;
+import org.argeo.api.acr.tabular.TabularRowIterator;
 import org.argeo.cms.ArgeoTypes;
-import org.argeo.cms.tabular.ArrayTabularRow;
-import org.argeo.cms.tabular.TabularColumn;
-import org.argeo.cms.tabular.TabularRow;
-import org.argeo.cms.tabular.TabularRowIterator;
+import org.argeo.cms.util.CsvParser;
 import org.argeo.jcr.JcrException;
-import org.argeo.util.CsvParser;
 
 /** Iterates over the rows of a {@link ArgeoTypes#ARGEO_TABLE} node. */
 public class JcrTabularRowIterator implements TabularRowIterator {

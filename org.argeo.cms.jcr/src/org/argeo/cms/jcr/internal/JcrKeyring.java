@@ -28,11 +28,11 @@ import javax.jcr.query.Query;
 import org.apache.commons.io.IOUtils;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.CmsLog;
+import org.argeo.api.cms.keyring.PBEKeySpecCallback;
+import org.argeo.cms.AbstractKeyring;
 import org.argeo.cms.ArgeoNames;
 import org.argeo.cms.ArgeoTypes;
 import org.argeo.cms.jcr.CmsJcrUtils;
-import org.argeo.cms.security.AbstractKeyring;
-import org.argeo.cms.security.PBEKeySpecCallback;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
 

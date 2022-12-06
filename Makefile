@@ -7,17 +7,14 @@ A2_CATEGORY = org.argeo.cms.jcr
 BUNDLES = \
 org.argeo.cms.jcr \
 swt/org.argeo.cms.jcr.ui \
-swt/org.argeo.cms.jcr.e4 \
 
 DEP_CATEGORIES = \
 org.argeo.tp \
-org.argeo.tp.apache \
-org.argeo.tp.jetty \
+org.argeo.tp.jcr \
 osgi/api/org.argeo.tp.osgi \
 osgi/equinox/org.argeo.tp.eclipse \
 swt/rap/org.argeo.tp.swt \
 swt/rap/org.argeo.tp.swt.workbench \
-org.argeo.tp.jcr \
 org.argeo.cms \
 swt/org.argeo.cms \
 swt/rap/org.argeo.cms \

@@ -19,7 +19,7 @@ import javax.jcr.Session;
 import javax.jcr.nodetype.NodeType;
 
 import org.argeo.api.cms.CmsConstants;
-import org.argeo.cms.auth.CurrentUser;
+import org.argeo.cms.CurrentUser;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.jackrabbit.fs.AbstractJackrabbitFsProvider;
 import org.argeo.jcr.fs.JcrFileSystem;

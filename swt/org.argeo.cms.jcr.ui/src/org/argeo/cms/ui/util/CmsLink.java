@@ -10,7 +10,7 @@ import javax.jcr.RepositoryException;
 
 import org.argeo.api.cms.CmsLog;
 import org.argeo.api.cms.ux.CmsStyle;
-import org.argeo.cms.auth.CurrentUser;
+import org.argeo.cms.CurrentUser;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.cms.swt.CmsSwtUtils;
 import org.argeo.cms.ui.CmsUiProvider;
