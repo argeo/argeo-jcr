@@ -1,0 +1,22 @@
+Argeo JCR provides extensions of Argeo Commons for use with the Java Content Repository API and Apache Jackrabbit.
+
+Please note that the JCR API is unfortunately provided under a proprietary license (the "Day Sepcification License", cf. https://developer.adobe.com/experience-manager/reference-materials/spec/jcr/2.0/license.html) which is therefore incompatible with this GPL-licensed layer, and that it must be conveyed separately. (This paragraph is not a legal advice)
+
+## Build
+Prerequisites to build this layer:
+- build Argeo TP
+- build Argeo Commons
+(cf. http://git.argeo.org)
+
+Then, run:
+
+git clone http://git.argeo.org/gpl/argeo-jcr.git --recursive
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+./argeo-jcr/configure
+
+cd argeo-jcr
+make clean all
+
+In order to use it within an Eclipse PDE environment:
+
+make clean all manifests
