@@ -20,9 +20,3 @@ make clean all
 In order to use it within an Eclipse PDE environment:
 
 make clean all manifests
-
-which will copy the generated OSGi MANIFESTs back to the source tree. The *.target files in argeo-tp/sdk can then be used to configure the target platforms.
-
-In order to develop with the Eclipse RCP components (Eclipse RAP being the default), additionally run:
-
-make -f Makefile-rcp.mk manifests
