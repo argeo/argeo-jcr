@@ -1,19 +1,20 @@
-package org.argeo.cms.jcr.acr.search;
+package org.argeo.cms.jcr.acr;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.qom.DynamicOperand;
+import javax.jcr.query.qom.QueryObjectModel;
 import javax.jcr.query.qom.QueryObjectModelConstants;
 import javax.jcr.query.qom.QueryObjectModelFactory;
 import javax.jcr.query.qom.Selector;
 import javax.jcr.query.qom.StaticOperand;
 import javax.xml.namespace.QName;
 
+import org.apache.jackrabbit.commons.query.sql2.QOMFormatter;
 import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.search.BasicSearch;
 import org.argeo.api.acr.search.Constraint;
@@ -21,8 +22,12 @@ import org.argeo.api.acr.search.ContentFilter;
 import org.argeo.api.acr.search.ContentFilter.Eq;
 import org.argeo.api.acr.search.ContentFilter.IsContentClass;
 import org.argeo.api.acr.search.ContentFilter.Not;
+import org.argeo.api.cms.CmsLog;
 
-public class JcrBasicSearch {
+/** Convert an ACR basic search to a JCR query. */
+class BasicSearchToQom {
+	private final static CmsLog log = CmsLog.getLog(BasicSearchToQom.class);
+
 	private Session session;
 	private QueryManager queryManager;
 	private BasicSearch basicSearch;
@@ -32,13 +37,14 @@ public class JcrBasicSearch {
 
 	String selectorName = "content";
 
-	public JcrBasicSearch(Session session, BasicSearch basicSearch, String relPath) throws RepositoryException {
+	public BasicSearchToQom(Session session, BasicSearch basicSearch, String relPath) throws RepositoryException {
+		this.session = session;
 		this.queryManager = session.getWorkspace().getQueryManager();
 		this.basicSearch = basicSearch;
 		factory = queryManager.getQOMFactory();
 	}
 
-	public Query createQuery() throws RepositoryException {
+	public QueryObjectModel createQuery() throws RepositoryException {
 		ContentFilter<?> where = basicSearch.getWhere();
 		// scan for content classes
 		// TODO deal with complex cases of multiple types
@@ -49,7 +55,12 @@ public class JcrBasicSearch {
 
 		Selector source = factory.selector(NamespaceUtils.toPrefixedName(contentClass), selectorName);
 
-		return factory.createQuery(source, qomConstraint, null, null);
+		QueryObjectModel qom = factory.createQuery(source, qomConstraint, null, null);
+		if (log.isDebugEnabled()) {
+			String sql2 = QOMFormatter.format(qom);
+			log.debug("JCR query:\n" + sql2 + "\n");
+		}
+		return qom;
 	}
 
 	private javax.jcr.query.qom.Constraint toQomConstraint(Constraint constraint) throws RepositoryException {

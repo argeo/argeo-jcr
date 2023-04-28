@@ -27,7 +27,6 @@ import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.cms.acr.ContentUtils;
 import org.argeo.cms.jcr.CmsJcrUtils;
-import org.argeo.cms.jcr.acr.search.JcrBasicSearch;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
 
@@ -149,7 +148,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	public Spliterator<Content> search(ProvidedSession session, BasicSearch search, String relPath) {
 		try {
 			Session jcrSession = getJcrSession(session, jcrWorkspace);
-			JcrBasicSearch jcrBasicSearch = new JcrBasicSearch(jcrSession, search, relPath);
+			BasicSearchToQom jcrBasicSearch = new BasicSearchToQom(jcrSession, search, relPath);
 			Query query = jcrBasicSearch.createQuery();
 			QueryResult queryResult = query.execute();
 			return new QueryResultSpliterator(session, queryResult.getNodes());
