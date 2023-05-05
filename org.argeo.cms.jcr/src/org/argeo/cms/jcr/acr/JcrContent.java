@@ -366,7 +366,8 @@ public class JcrContent extends AbstractContent {
 
 	private QName nodeTypeToQName(NodeType nodeType) {
 		String name = nodeType.getName();
-		return QName.valueOf(name);
+		return NamespaceUtils.parsePrefixedName(provider, name);
+		//return QName.valueOf(name);
 	}
 
 	@Override
