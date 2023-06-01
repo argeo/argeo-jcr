@@ -1,6 +1,10 @@
 include sdk.mk
 
 all: osgi
+	
+install: osgi-install
+
+uninstall: osgi-uninstall
 
 A2_CATEGORY = org.argeo.cms.jcr
 

@@ -6,14 +6,21 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.query.Query;
+import javax.jcr.query.QueryResult;
 import javax.xml.namespace.NamespaceContext;
 
 import org.argeo.api.acr.Content;
+import org.argeo.api.acr.search.BasicSearch;
 import org.argeo.api.acr.spi.ContentProvider;
 import org.argeo.api.acr.spi.ProvidedContent;
 import org.argeo.api.acr.spi.ProvidedSession;
@@ -133,4 +140,63 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		}
 	}
 
+	/*
+	 * SEARCH
+	 */
+
+	@Override
+	public Spliterator<Content> search(ProvidedSession session, BasicSearch search, String relPath) {
+		try {
+			Session jcrSession = getJcrSession(session, jcrWorkspace);
+			BasicSearchToQom jcrBasicSearch = new BasicSearchToQom(jcrSession, search, relPath);
+			Query query = jcrBasicSearch.createQuery();
+			QueryResult queryResult = query.execute();
+			return new QueryResultSpliterator(session, queryResult.getNodes());
+		} catch (RepositoryException e) {
+			throw new JcrException(e);
+		}
+	}
+
+	class QueryResultSpliterator implements Spliterator<Content> {
+		private ProvidedSession providedSession;
+		private NodeIterator nodeIterator;
+
+		public QueryResultSpliterator(ProvidedSession providedSession, NodeIterator nodeIterator) {
+			super();
+			this.providedSession = providedSession;
+			this.nodeIterator = nodeIterator;
+		}
+
+		@Override
+		public boolean tryAdvance(Consumer<? super Content> action) {
+			if (!nodeIterator.hasNext())
+				return false;
+			try {
+				Node node = nodeIterator.nextNode();
+				// TODO optimise by reusing the Node
+				JcrContent jcrContent = new JcrContent(providedSession, JcrContentProvider.this, jcrWorkspace,
+						node.getPath());
+				action.accept(jcrContent);
+				return true;
+			} catch (RepositoryException e) {
+				throw new JcrException(e);
+			}
+		}
+
+		@Override
+		public Spliterator<Content> trySplit() {
+			return null;
+		}
+
+		@Override
+		public long estimateSize() {
+			return nodeIterator.getSize();
+		}
+
+		@Override
+		public int characteristics() {
+			return NONNULL | SIZED;
+		}
+
+	}
 }
