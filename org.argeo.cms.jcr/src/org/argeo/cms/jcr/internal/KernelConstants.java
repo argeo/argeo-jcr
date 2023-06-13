@@ -4,7 +4,7 @@ import org.argeo.api.cms.CmsConstants;
 
 /** Internal CMS constants. */
 @Deprecated
-public interface KernelConstants {
+interface KernelConstants {
 	// Directories
 	String DIR_NODE = "node";
 	String DIR_REPOS = "repos";
