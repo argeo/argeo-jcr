@@ -48,11 +48,15 @@ public class JcrContent extends AbstractContent {
 	private String jcrWorkspace;
 	private String jcrPath;
 
+	private final boolean isMountBase;
+
 	protected JcrContent(ProvidedSession session, JcrContentProvider provider, String jcrWorkspace, String jcrPath) {
 		super(session);
 		this.provider = provider;
 		this.jcrWorkspace = jcrWorkspace;
 		this.jcrPath = jcrPath;
+
+		this.isMountBase = ContentUtils.SLASH_STRING.equals(jcrPath);
 	}
 
 	@Override
@@ -201,8 +205,15 @@ public class JcrContent extends AbstractContent {
 
 	@Override
 	public Content getParent() {
-		if (Jcr.isRoot(getJcrNode())) // root
-			return null;
+		if (isMountBase) {
+			String mountPath = provider.getMountPath();
+			if (mountPath == null || mountPath.equals("/"))
+				return null;
+			String[] parent = ContentUtils.getParentPath(mountPath);
+			return getSession().get(parent[0]);
+		}
+//		if (Jcr.isRoot(getJcrNode())) // root
+//			return null;
 		return new JcrContent(getSession(), provider, jcrWorkspace, Jcr.getParentPath(getJcrNode()));
 	}
 
@@ -257,6 +268,8 @@ public class JcrContent extends AbstractContent {
 	@Override
 	public boolean isParentAccessible() {
 		String jcrParentPath = ContentUtils.getParentPath(jcrPath)[0];
+		if ("".equals(jcrParentPath)) // JCR root node
+			jcrParentPath = ContentUtils.SLASH_STRING;
 		try {
 			return provider.getJcrSession(getSession(), jcrWorkspace).hasPermission(jcrParentPath, Session.ACTION_READ);
 		} catch (RepositoryException e) {
