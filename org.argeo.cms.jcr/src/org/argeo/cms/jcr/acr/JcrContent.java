@@ -21,6 +21,7 @@ import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.jcr.Value;
 import javax.jcr.nodetype.NodeType;
 import javax.xml.namespace.QName;
@@ -242,11 +243,24 @@ public class JcrContent extends AbstractContent {
 
 	}
 
+	/*
+	 * ACCESS
+	 */
 	boolean exists() {
 		try {
 			return provider.getJcrSession(getSession(), jcrWorkspace).itemExists(jcrPath);
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot check whether " + jcrPath + " exists", e);
+		}
+	}
+
+	@Override
+	public boolean isParentAccessible() {
+		String jcrParentPath = ContentUtils.getParentPath(jcrPath)[0];
+		try {
+			return provider.getJcrSession(getSession(), jcrWorkspace).hasPermission(jcrParentPath, Session.ACTION_READ);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot check whether parent " + jcrParentPath + " is accessible", e);
 		}
 	}
 
@@ -367,7 +381,7 @@ public class JcrContent extends AbstractContent {
 	private QName nodeTypeToQName(NodeType nodeType) {
 		String name = nodeType.getName();
 		return NamespaceUtils.parsePrefixedName(provider, name);
-		//return QName.valueOf(name);
+		// return QName.valueOf(name);
 	}
 
 	@Override
