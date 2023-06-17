@@ -5,14 +5,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 
 import javax.jcr.Node;
@@ -23,12 +27,15 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.Value;
+import javax.jcr.ValueFactory;
 import javax.jcr.nodetype.NodeType;
+import javax.jcr.nodetype.NodeTypeManager;
 import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
 import org.argeo.api.acr.Content;
+import org.argeo.api.acr.CrAttributeType;
 import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.spi.ContentProvider;
 import org.argeo.api.acr.spi.ProvidedSession;
@@ -59,6 +66,10 @@ public class JcrContent extends AbstractContent {
 		this.isMountBase = ContentUtils.SLASH_STRING.equals(jcrPath);
 	}
 
+	/*
+	 * READ/WRITE
+	 */
+
 	@Override
 	public QName getName() {
 		String name = Jcr.getName(getJcrNode());
@@ -70,13 +81,14 @@ public class JcrContent extends AbstractContent {
 		return NamespaceUtils.parsePrefixedName(provider, name);
 	}
 
-	@SuppressWarnings("unchecked")
+//	@SuppressWarnings("unchecked")
 	@Override
 	public <A> Optional<A> get(QName key, Class<A> clss) {
-		if (isDefaultAttrTypeRequested(clss)) {
-			return Optional.of((A) get(getJcrNode(), key.toString()));
-		}
-		return Optional.of((A) Jcr.get(getJcrNode(), key.toString()));
+		Object value = get(getJcrNode(), key.toString());
+//		if (isDefaultAttrTypeRequested(clss)) {
+//			return Optional.ofNullable((A) value);
+//		}
+		return CrAttributeType.cast(clss, value);
 	}
 
 	@Override
@@ -105,18 +117,11 @@ public class JcrContent extends AbstractContent {
 		}
 	}
 
-	public Node getJcrNode() {
-		try {
-			// TODO caching?
-			return provider.getJcrSession(getSession(), jcrWorkspace).getNode(jcrPath);
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot retrieve " + jcrPath + " from workspace " + jcrWorkspace, e);
-		}
-	}
-
 	/** Cast to a standard Java object. */
 	static Object get(Node node, String property) {
 		try {
+			if (!node.hasProperty(property))
+				return null;
 			Property p = node.getProperty(property);
 			if (p.isMultiple()) {
 				Value[] values = p.getValues();
@@ -130,27 +135,107 @@ public class JcrContent extends AbstractContent {
 				return convertSingleValue(value);
 			}
 		} catch (RepositoryException e) {
-			throw new JcrException("Cannot cast value from " + property + " of node " + node, e);
+			throw new JcrException("Cannot cast value from " + property + " of " + node, e);
 		}
 	}
 
-	static Object convertSingleValue(Value value) throws RepositoryException {
-		switch (value.getType()) {
-		case PropertyType.STRING:
-			return value.getString();
-		case PropertyType.DOUBLE:
-			return (Double) value.getDouble();
-		case PropertyType.LONG:
-			return (Long) value.getLong();
-		case PropertyType.BOOLEAN:
-			return (Boolean) value.getBoolean();
-		case PropertyType.DATE:
-			Calendar calendar = value.getDate();
-			return calendar.toInstant();
-		case PropertyType.BINARY:
-			throw new IllegalArgumentException("Binary is not supported as an attribute");
-		default:
-			return value.getString();
+	static Object convertSingleValue(Value value) throws JcrException, IllegalArgumentException {
+		try {
+			switch (value.getType()) {
+			case PropertyType.STRING:
+				return value.getString();
+			case PropertyType.DOUBLE:
+				return (Double) value.getDouble();
+			case PropertyType.LONG:
+				return (Long) value.getLong();
+			case PropertyType.BOOLEAN:
+				return (Boolean) value.getBoolean();
+			case PropertyType.DATE:
+				Calendar calendar = value.getDate();
+				return calendar.toInstant();
+			case PropertyType.BINARY:
+				throw new IllegalArgumentException("Binary is not supported as an attribute");
+			default:
+				return value.getString();
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot convert " + value + " to an object.", e);
+		}
+	}
+
+	static Value convertSingleObject(ValueFactory factory, Object value) {
+		if (value instanceof String string) {
+			return factory.createValue(string);
+		} else if (value instanceof Double dbl) {
+			return factory.createValue(dbl);
+		} else if (value instanceof Float flt) {
+			return factory.createValue(flt);
+		} else if (value instanceof Long lng) {
+			return factory.createValue(lng);
+		} else if (value instanceof Integer intg) {
+			return factory.createValue(intg);
+		} else if (value instanceof Boolean bool) {
+			return factory.createValue(bool);
+		} else if (value instanceof Instant instant) {
+			GregorianCalendar calendar = new GregorianCalendar();
+			calendar.setTime(Date.from(instant));
+			return factory.createValue(calendar);
+		} else {
+			// TODO or use String by default?
+			throw new IllegalArgumentException("Unsupported value " + value.getClass());
+		}
+	}
+
+	@Override
+	public Class<?> getType(QName key) {
+		Node node = getJcrNode();
+		String p = NamespaceUtils.toFullyQualified(key);
+		try {
+			if (node.hasProperty(p)) {
+				Property property = node.getProperty(p);
+				return switch (property.getType()) {
+				case PropertyType.STRING:
+				case PropertyType.NAME:
+				case PropertyType.PATH:
+				case PropertyType.DECIMAL:
+					yield String.class;
+				case PropertyType.LONG:
+					yield Long.class;
+				case PropertyType.DOUBLE:
+					yield Double.class;
+				case PropertyType.BOOLEAN:
+					yield Boolean.class;
+				case PropertyType.DATE:
+					yield Instant.class;
+				case PropertyType.WEAKREFERENCE:
+				case PropertyType.REFERENCE:
+					yield UUID.class;
+				default:
+					yield Object.class;
+				};
+			} else {
+				// TODO does it make sense?
+				return Object.class;
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot get type of property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
+	public boolean isMultiple(QName key) {
+		Node node = getJcrNode();
+		String p = NamespaceUtils.toFullyQualified(key);
+		try {
+			if (node.hasProperty(p)) {
+				Property property = node.getProperty(p);
+				return property.isMultiple();
+			} else {
+				return false;
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException(
+					"Cannot check multiplicityof property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
 		}
 	}
 
@@ -254,12 +339,31 @@ public class JcrContent extends AbstractContent {
 
 	}
 
+	@Override
+	public Object put(QName key, Object value) {
+		try {
+			String property = NamespaceUtils.toFullyQualified(key);
+			Node node = getJcrNode();
+			Object old = null;
+			if (node.hasProperty(property)) {
+				old = convertSingleValue(node.getProperty(property).getValue());
+			}
+			Value newValue = convertSingleObject(getJcrSession().getValueFactory(), value);
+			node.setProperty(property, newValue);
+			// FIXME proper edition
+			node.getSession().save();
+			return old;
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot set property " + key + " on " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
 	/*
 	 * ACCESS
 	 */
-	boolean exists() {
+	protected boolean exists() {
 		try {
-			return provider.getJcrSession(getSession(), jcrWorkspace).itemExists(jcrPath);
+			return getJcrSession().itemExists(jcrPath);
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot check whether " + jcrPath + " exists", e);
 		}
@@ -271,7 +375,7 @@ public class JcrContent extends AbstractContent {
 		if ("".equals(jcrParentPath)) // JCR root node
 			jcrParentPath = ContentUtils.SLASH_STRING;
 		try {
-			return provider.getJcrSession(getSession(), jcrWorkspace).hasPermission(jcrParentPath, Session.ACTION_READ);
+			return getJcrSession().hasPermission(jcrParentPath, Session.ACTION_READ);
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot check whether parent " + jcrParentPath + " is accessible", e);
 		}
@@ -282,7 +386,9 @@ public class JcrContent extends AbstractContent {
 	 */
 	@SuppressWarnings("unchecked")
 	public <A> A adapt(Class<A> clss) {
-		if (Source.class.isAssignableFrom(clss)) {
+		if (Node.class.isAssignableFrom(clss)) {
+			return (A) getJcrNode();
+		} else if (Source.class.isAssignableFrom(clss)) {
 //			try {
 			PipedOutputStream out = new PipedOutputStream();
 			PipedInputStream in;
@@ -295,7 +401,7 @@ public class JcrContent extends AbstractContent {
 			ForkJoinPool.commonPool().execute(() -> {
 //				try (PipedOutputStream out = new PipedOutputStream(in)) {
 				try {
-					provider.getJcrSession(getSession(), jcrWorkspace).exportDocumentView(jcrPath, out, true, false);
+					getJcrSession().exportDocumentView(jcrPath, out, true, false);
 					out.flush();
 					out.close();
 				} catch (IOException | RepositoryException e) {
@@ -307,9 +413,9 @@ public class JcrContent extends AbstractContent {
 //			} catch (IOException e) {
 //				throw new RuntimeException("Cannot adapt " + JcrContent.this + " to " + clss, e);
 //			}
-		} else
-
+		} else {
 			return super.adapt(clss);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -398,8 +504,47 @@ public class JcrContent extends AbstractContent {
 	}
 
 	@Override
+	public void addContentClasses(QName... contentClass) throws IllegalArgumentException, JcrException {
+		try {
+			NodeTypeManager ntm = getJcrSession().getWorkspace().getNodeTypeManager();
+			List<NodeType> nodeTypes = new ArrayList<>();
+			for (QName clss : contentClass) {
+				NodeType nodeType = ntm.getNodeType(NamespaceUtils.toFullyQualified(clss));
+				if (!nodeType.isMixin())
+					throw new IllegalArgumentException(clss + " is not a mixin");
+				nodeTypes.add(nodeType);
+			}
+			Node node = getJcrNode();
+			for (NodeType nodeType : nodeTypes) {
+				node.addMixin(nodeType.getName());
+			}
+			// FIXME proper edition
+			node.getSession().save();
+		} catch (RepositoryException e) {
+			throw new JcrException(
+					"Cannot add content classes " + contentClass + " to " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
 	public int getSiblingIndex() {
 		return Jcr.getIndex(getJcrNode());
+	}
+
+	/*
+	 * COMMON UTILITIES
+	 */
+	protected Session getJcrSession() {
+		return provider.getJcrSession(getSession(), jcrWorkspace);
+	}
+
+	protected Node getJcrNode() {
+		try {
+			// TODO caching?
+			return getJcrSession().getNode(jcrPath);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot retrieve " + jcrPath + " from workspace " + jcrWorkspace, e);
+		}
 	}
 
 	/*
