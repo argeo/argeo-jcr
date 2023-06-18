@@ -69,8 +69,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 
 	@Override
 	public boolean exists(ProvidedSession contentSession, String relativePath) {
-		String jcrWorkspace = ContentUtils.getParentPath(mountPath)[1];
-		String jcrPath = "/" + relativePath;
+		String jcrPath = ContentUtils.SLASH + relativePath;
 		return new JcrContent(contentSession, this, jcrWorkspace, jcrPath).exists();
 	}
 
