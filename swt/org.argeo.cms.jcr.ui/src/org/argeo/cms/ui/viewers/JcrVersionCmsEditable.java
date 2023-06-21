@@ -30,8 +30,8 @@ public class JcrVersionCmsEditable extends AbstractCmsEditable {
 		if (node.getSession().hasPermission(node.getPath(), Session.ACTION_SET_PROPERTY)) {
 			// was Session.ACTION_ADD_NODE
 			canEdit = true;
-			if (!node.isNodeType(NodeType.MIX_VERSIONABLE)) {
-				node.addMixin(NodeType.MIX_VERSIONABLE);
+			if (!node.isNodeType(NodeType.MIX_SIMPLE_VERSIONABLE)) {
+				node.addMixin(NodeType.MIX_SIMPLE_VERSIONABLE);
 				node.getSession().save();
 			}
 			versionManager = node.getSession().getWorkspace().getVersionManager();
