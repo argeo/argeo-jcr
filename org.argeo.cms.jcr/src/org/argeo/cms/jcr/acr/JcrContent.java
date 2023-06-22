@@ -37,7 +37,6 @@ import javax.xml.transform.stream.StreamSource;
 import org.argeo.api.acr.Content;
 import org.argeo.api.acr.CrAttributeType;
 import org.argeo.api.acr.NamespaceUtils;
-import org.argeo.api.acr.spi.ContentProvider;
 import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.cms.acr.AbstractContent;
@@ -48,8 +47,6 @@ import org.argeo.jcr.JcrUtils;
 
 /** A JCR {@link Node} accessed as {@link Content}. */
 public class JcrContent extends AbstractContent {
-//	private Node jcrNode;
-
 	private JcrContentProvider provider;
 
 	private String jcrWorkspace;
@@ -67,7 +64,7 @@ public class JcrContent extends AbstractContent {
 	}
 
 	/*
-	 * READ/WRITE
+	 * READ
 	 */
 
 	@Override
@@ -85,9 +82,6 @@ public class JcrContent extends AbstractContent {
 	@Override
 	public <A> Optional<A> get(QName key, Class<A> clss) {
 		Object value = get(getJcrNode(), key.toString());
-//		if (isDefaultAttrTypeRequested(clss)) {
-//			return Optional.ofNullable((A) value);
-//		}
 		return CrAttributeType.cast(clss, value);
 	}
 
@@ -138,6 +132,248 @@ public class JcrContent extends AbstractContent {
 			throw new JcrException("Cannot cast value from " + property + " of " + node, e);
 		}
 	}
+
+	@Override
+	public boolean isMultiple(QName key) {
+		Node node = getJcrNode();
+		String p = NamespaceUtils.toFullyQualified(key);
+		try {
+			if (node.hasProperty(p)) {
+				Property property = node.getProperty(p);
+				return property.isMultiple();
+			} else {
+				return false;
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException(
+					"Cannot check multiplicityof property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
+	public String getPath() {
+		try {
+			// Note: it is important to to use the default way (recursing through parents),
+			// since the session may not have access to parent nodes
+			return ContentUtils.ROOT_SLASH + jcrWorkspace + getJcrNode().getPath();
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot get depth of " + getJcrNode(), e);
+		}
+	}
+
+	@Override
+	public int getDepth() {
+		try {
+			return getJcrNode().getDepth() + 1;
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot get depth of " + getJcrNode(), e);
+		}
+	}
+
+	@Override
+	public Content getParent() {
+		if (isMountBase) {
+			String mountPath = provider.getMountPath();
+			if (mountPath == null || mountPath.equals("/"))
+				return null;
+			String[] parent = ContentUtils.getParentPath(mountPath);
+			return getSession().get(parent[0]);
+		}
+//		if (Jcr.isRoot(getJcrNode())) // root
+//			return null;
+		return new JcrContent(getSession(), provider, jcrWorkspace, Jcr.getParentPath(getJcrNode()));
+	}
+
+	@Override
+	public int getSiblingIndex() {
+		return Jcr.getIndex(getJcrNode());
+	}
+
+	/*
+	 * WRITE
+	 */
+
+	protected Node openForEdit() {
+		Node node = getProvider().openForEdit(getSession(), jcrWorkspace, jcrPath);
+		getSession().notifyModification(this);
+		return node;
+	}
+
+	@Override
+	public Content add(QName name, QName... classes) {
+		if (classes.length > 0) {
+			QName primaryType = classes[0];
+			Node node = openForEdit();
+			Node child = Jcr.addNode(node, name.toString(), primaryType.toString());
+			for (int i = 1; i < classes.length; i++) {
+				try {
+					child.addMixin(classes[i].toString());
+				} catch (RepositoryException e) {
+					throw new JcrException("Cannot add child to " + getJcrNode(), e);
+				}
+			}
+
+		} else {
+			Jcr.addNode(getJcrNode(), name.toString(), NodeType.NT_UNSTRUCTURED);
+		}
+		return null;
+	}
+
+	@Override
+	public void remove() {
+		Node node = openForEdit();
+		Jcr.remove(node);
+	}
+
+	@Override
+	protected void removeAttr(QName key) {
+		Node node = openForEdit();
+		Property property = Jcr.getProperty(node, key.toString());
+		if (property != null) {
+			try {
+				property.remove();
+			} catch (RepositoryException e) {
+				throw new JcrException("Cannot remove property " + key + " from " + getJcrNode(), e);
+			}
+		}
+
+	}
+
+	@Override
+	public Object put(QName key, Object value) {
+		try {
+			String property = NamespaceUtils.toFullyQualified(key);
+			Node node = openForEdit();
+			Object old = null;
+			if (node.hasProperty(property)) {
+				old = convertSingleValue(node.getProperty(property).getValue());
+			}
+			Value newValue = convertSingleObject(node.getSession().getValueFactory(), value);
+			node.setProperty(property, newValue);
+			// FIXME proper edition
+			node.getSession().save();
+			return old;
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot set property " + key + " on " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
+	public void addContentClasses(QName... contentClass) throws IllegalArgumentException, JcrException {
+		try {
+			Node node = openForEdit();
+			NodeTypeManager ntm = node.getSession().getWorkspace().getNodeTypeManager();
+			List<NodeType> nodeTypes = new ArrayList<>();
+			for (QName clss : contentClass) {
+				NodeType nodeType = ntm.getNodeType(NamespaceUtils.toFullyQualified(clss));
+				if (!nodeType.isMixin())
+					throw new IllegalArgumentException(clss + " is not a mixin");
+				nodeTypes.add(nodeType);
+			}
+			for (NodeType nodeType : nodeTypes) {
+				node.addMixin(nodeType.getName());
+			}
+			// FIXME proper edition
+			node.getSession().save();
+		} catch (RepositoryException e) {
+			throw new JcrException(
+					"Cannot add content classes " + contentClass + " to " + jcrPath + " in " + jcrWorkspace, e);
+		}
+	}
+
+	/*
+	 * ACCESS
+	 */
+	protected boolean exists() {
+		try {
+			return getJcrSession().itemExists(jcrPath);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot check whether " + jcrPath + " exists", e);
+		}
+	}
+
+	@Override
+	public boolean isParentAccessible() {
+		String jcrParentPath = ContentUtils.getParentPath(jcrPath)[0];
+		if ("".equals(jcrParentPath)) // JCR root node
+			jcrParentPath = ContentUtils.SLASH_STRING;
+		try {
+			return getJcrSession().hasPermission(jcrParentPath, Session.ACTION_READ);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot check whether parent " + jcrParentPath + " is accessible", e);
+		}
+	}
+
+	/*
+	 * ADAPTERS
+	 */
+	@SuppressWarnings("unchecked")
+	public <A> A adapt(Class<A> clss) {
+		if (Node.class.isAssignableFrom(clss)) {
+			return (A) getJcrNode();
+		} else if (Source.class.isAssignableFrom(clss)) {
+//			try {
+			PipedOutputStream out = new PipedOutputStream();
+			PipedInputStream in;
+			try {
+				in = new PipedInputStream(out);
+			} catch (IOException e) {
+				throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
+			}
+
+			ForkJoinPool.commonPool().execute(() -> {
+//				try (PipedOutputStream out = new PipedOutputStream(in)) {
+				try {
+					getJcrSession().exportDocumentView(jcrPath, out, true, false);
+					out.flush();
+					out.close();
+				} catch (IOException | RepositoryException e) {
+					throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
+				}
+
+			});
+			return (A) new StreamSource(in);
+//			} catch (IOException e) {
+//				throw new RuntimeException("Cannot adapt " + JcrContent.this + " to " + clss, e);
+//			}
+		} else {
+			return super.adapt(clss);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <C extends Closeable> C open(Class<C> clss) throws IOException, IllegalArgumentException {
+		if (InputStream.class.isAssignableFrom(clss)) {
+			Node node = getJcrNode();
+			if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
+				try {
+					return (C) JcrUtils.getFileAsStream(node);
+				} catch (RepositoryException e) {
+					throw new JcrException("Cannot open " + jcrPath + " in workspace " + jcrWorkspace, e);
+				}
+			}
+		}
+		return super.open(clss);
+	}
+
+	@Override
+	public JcrContentProvider getProvider() {
+		return provider;
+	}
+
+	@Override
+	public String getSessionLocalId() {
+		try {
+			return getJcrNode().getIdentifier();
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot get identifier for " + getJcrNode(), e);
+		}
+	}
+
+	/*
+	 * TYPING
+	 */
 
 	static Object convertSingleValue(Value value) throws JcrException, IllegalArgumentException {
 		try {
@@ -223,244 +459,8 @@ public class JcrContent extends AbstractContent {
 	}
 
 	@Override
-	public boolean isMultiple(QName key) {
-		Node node = getJcrNode();
-		String p = NamespaceUtils.toFullyQualified(key);
-		try {
-			if (node.hasProperty(p)) {
-				Property property = node.getProperty(p);
-				return property.isMultiple();
-			} else {
-				return false;
-			}
-		} catch (RepositoryException e) {
-			throw new JcrException(
-					"Cannot check multiplicityof property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
-		}
-	}
-
-	class JcrContentIterator implements Iterator<Content> {
-		private final NodeIterator nodeIterator;
-		// we keep track in order to be able to delete it
-		private JcrContent current = null;
-
-		protected JcrContentIterator(NodeIterator nodeIterator) {
-			this.nodeIterator = nodeIterator;
-		}
-
-		@Override
-		public boolean hasNext() {
-			return nodeIterator.hasNext();
-		}
-
-		@Override
-		public Content next() {
-			current = new JcrContent(getSession(), provider, jcrWorkspace, Jcr.getPath(nodeIterator.nextNode()));
-			return current;
-		}
-
-		@Override
-		public void remove() {
-			if (current != null) {
-				Jcr.remove(current.getJcrNode());
-			}
-		}
-
-	}
-
-	@Override
-	public String getPath() {
-		try {
-			// Note: it is important to to use the default way (recursing through parents),
-			// since the session may not have access to parent nodes
-			return ContentUtils.ROOT_SLASH + jcrWorkspace + getJcrNode().getPath();
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot get depth of " + getJcrNode(), e);
-		}
-	}
-
-	@Override
-	public int getDepth() {
-		try {
-			return getJcrNode().getDepth() + 1;
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot get depth of " + getJcrNode(), e);
-		}
-	}
-
-	@Override
-	public Content getParent() {
-		if (isMountBase) {
-			String mountPath = provider.getMountPath();
-			if (mountPath == null || mountPath.equals("/"))
-				return null;
-			String[] parent = ContentUtils.getParentPath(mountPath);
-			return getSession().get(parent[0]);
-		}
-//		if (Jcr.isRoot(getJcrNode())) // root
-//			return null;
-		return new JcrContent(getSession(), provider, jcrWorkspace, Jcr.getParentPath(getJcrNode()));
-	}
-
-	@Override
-	public Content add(QName name, QName... classes) {
-		if (classes.length > 0) {
-			QName primaryType = classes[0];
-			Node child = Jcr.addNode(getJcrNode(), name.toString(), primaryType.toString());
-			for (int i = 1; i < classes.length; i++) {
-				try {
-					child.addMixin(classes[i].toString());
-				} catch (RepositoryException e) {
-					throw new JcrException("Cannot add child to " + getJcrNode(), e);
-				}
-			}
-
-		} else {
-			Jcr.addNode(getJcrNode(), name.toString(), NodeType.NT_UNSTRUCTURED);
-		}
-		return null;
-	}
-
-	@Override
-	public void remove() {
-		Jcr.remove(getJcrNode());
-	}
-
-	@Override
-	protected void removeAttr(QName key) {
-		Property property = Jcr.getProperty(getJcrNode(), key.toString());
-		if (property != null) {
-			try {
-				property.remove();
-			} catch (RepositoryException e) {
-				throw new JcrException("Cannot remove property " + key + " from " + getJcrNode(), e);
-			}
-		}
-
-	}
-
-	@Override
-	public Object put(QName key, Object value) {
-		try {
-			String property = NamespaceUtils.toFullyQualified(key);
-			Node node = getJcrNode();
-			Object old = null;
-			if (node.hasProperty(property)) {
-				old = convertSingleValue(node.getProperty(property).getValue());
-			}
-			Value newValue = convertSingleObject(getJcrSession().getValueFactory(), value);
-			node.setProperty(property, newValue);
-			// FIXME proper edition
-			node.getSession().save();
-			return old;
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot set property " + key + " on " + jcrPath + " in " + jcrWorkspace, e);
-		}
-	}
-
-	/*
-	 * ACCESS
-	 */
-	protected boolean exists() {
-		try {
-			return getJcrSession().itemExists(jcrPath);
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot check whether " + jcrPath + " exists", e);
-		}
-	}
-
-	@Override
-	public boolean isParentAccessible() {
-		String jcrParentPath = ContentUtils.getParentPath(jcrPath)[0];
-		if ("".equals(jcrParentPath)) // JCR root node
-			jcrParentPath = ContentUtils.SLASH_STRING;
-		try {
-			return getJcrSession().hasPermission(jcrParentPath, Session.ACTION_READ);
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot check whether parent " + jcrParentPath + " is accessible", e);
-		}
-	}
-
-	/*
-	 * ADAPTERS
-	 */
-	@SuppressWarnings("unchecked")
-	public <A> A adapt(Class<A> clss) {
-		if (Node.class.isAssignableFrom(clss)) {
-			return (A) getJcrNode();
-		} else if (Source.class.isAssignableFrom(clss)) {
-//			try {
-			PipedOutputStream out = new PipedOutputStream();
-			PipedInputStream in;
-			try {
-				in = new PipedInputStream(out);
-			} catch (IOException e) {
-				throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
-			}
-
-			ForkJoinPool.commonPool().execute(() -> {
-//				try (PipedOutputStream out = new PipedOutputStream(in)) {
-				try {
-					getJcrSession().exportDocumentView(jcrPath, out, true, false);
-					out.flush();
-					out.close();
-				} catch (IOException | RepositoryException e) {
-					throw new RuntimeException("Cannot export " + jcrPath + " in workspace " + jcrWorkspace, e);
-				}
-
-			});
-			return (A) new StreamSource(in);
-//			} catch (IOException e) {
-//				throw new RuntimeException("Cannot adapt " + JcrContent.this + " to " + clss, e);
-//			}
-		} else {
-			return super.adapt(clss);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <C extends Closeable> C open(Class<C> clss) throws IOException, IllegalArgumentException {
-		if (InputStream.class.isAssignableFrom(clss)) {
-			Node node = getJcrNode();
-			if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
-				try {
-					return (C) JcrUtils.getFileAsStream(node);
-				} catch (RepositoryException e) {
-					throw new JcrException("Cannot open " + jcrPath + " in workspace " + jcrWorkspace, e);
-				}
-			}
-		}
-		return super.open(clss);
-	}
-
-	@Override
-	public ContentProvider getProvider() {
-		return provider;
-	}
-
-	@Override
-	public String getSessionLocalId() {
-		try {
-			return getJcrNode().getIdentifier();
-		} catch (RepositoryException e) {
-			throw new JcrException("Cannot get identifier for " + getJcrNode(), e);
-		}
-	}
-
-	/*
-	 * TYPING
-	 */
-	@Override
 	public List<QName> getContentClasses() {
 		try {
-//			Node node = getJcrNode();
-//			List<QName> res = new ArrayList<>();
-//			res.add(nodeTypeToQName(node.getPrimaryNodeType()));
-//			for (NodeType mixin : node.getMixinNodeTypes()) {
-//				res.add(nodeTypeToQName(mixin));
-//			}
-//			return res;
 			Node context = getJcrNode();
 
 			List<QName> res = new ArrayList<>();
@@ -481,15 +481,6 @@ public class JcrContent extends AbstractContent {
 					secondaryTypes.add(nodeTypeToQName(superType));
 				}
 			}
-//		// entity type
-//		if (context.isNodeType(EntityType.entity.get())) {
-//			if (context.hasProperty(EntityNames.ENTITY_TYPE)) {
-//				String entityTypeName = context.getProperty(EntityNames.ENTITY_TYPE).getString();
-//				if (byType.containsKey(entityTypeName)) {
-//					types.add(entityTypeName);
-//				}
-//			}
-//		}
 			res.addAll(secondaryTypes);
 			return res;
 		} catch (RepositoryException e) {
@@ -501,34 +492,6 @@ public class JcrContent extends AbstractContent {
 		String name = nodeType.getName();
 		return NamespaceUtils.parsePrefixedName(provider, name);
 		// return QName.valueOf(name);
-	}
-
-	@Override
-	public void addContentClasses(QName... contentClass) throws IllegalArgumentException, JcrException {
-		try {
-			NodeTypeManager ntm = getJcrSession().getWorkspace().getNodeTypeManager();
-			List<NodeType> nodeTypes = new ArrayList<>();
-			for (QName clss : contentClass) {
-				NodeType nodeType = ntm.getNodeType(NamespaceUtils.toFullyQualified(clss));
-				if (!nodeType.isMixin())
-					throw new IllegalArgumentException(clss + " is not a mixin");
-				nodeTypes.add(nodeType);
-			}
-			Node node = getJcrNode();
-			for (NodeType nodeType : nodeTypes) {
-				node.addMixin(nodeType.getName());
-			}
-			// FIXME proper edition
-			node.getSession().save();
-		} catch (RepositoryException e) {
-			throw new JcrException(
-					"Cannot add content classes " + contentClass + " to " + jcrPath + " in " + jcrWorkspace, e);
-		}
-	}
-
-	@Override
-	public int getSiblingIndex() {
-		return Jcr.getIndex(getJcrNode());
 	}
 
 	/*
@@ -563,6 +526,39 @@ public class JcrContent extends AbstractContent {
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot adapt " + node + " to a content", e);
 		}
+	}
+
+	/*
+	 * CONTENT ITERATOR
+	 */
+
+	class JcrContentIterator implements Iterator<Content> {
+		private final NodeIterator nodeIterator;
+		// we keep track in order to be able to delete it
+		private JcrContent current = null;
+
+		protected JcrContentIterator(NodeIterator nodeIterator) {
+			this.nodeIterator = nodeIterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return nodeIterator.hasNext();
+		}
+
+		@Override
+		public Content next() {
+			current = new JcrContent(getSession(), provider, jcrWorkspace, Jcr.getPath(nodeIterator.nextNode()));
+			return current;
+		}
+
+		@Override
+		public void remove() {
+			if (current != null) {
+				Jcr.remove(current.getJcrNode());
+			}
+		}
+
 	}
 
 }

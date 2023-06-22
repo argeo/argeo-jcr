@@ -73,7 +73,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		return new JcrContent(contentSession, this, jcrWorkspace, jcrPath).exists();
 	}
 
-	public Session getJcrSession(ProvidedSession contentSession, String jcrWorkspace) {
+	protected JcrSessionAdapter getJcrSessionAdapter(ProvidedSession contentSession) {
 		JcrSessionAdapter sessionAdapter = sessionAdapters.get(contentSession);
 		if (sessionAdapter == null) {
 			final JcrSessionAdapter newSessionAdapter = new JcrSessionAdapter(jcrRepository, contentSession,
@@ -82,13 +82,43 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 			contentSession.onClose().thenAccept((s) -> newSessionAdapter.close());
 			sessionAdapter = newSessionAdapter;
 		}
+		return sessionAdapter;
+	}
 
+	public Session getJcrSession(ProvidedSession contentSession, String jcrWorkspace) {
+		JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(contentSession);
 		Session jcrSession = sessionAdapter.getSession(jcrWorkspace);
 		return jcrSession;
 	}
 
 	public Session getJcrSession(Content content, String jcrWorkspace) {
 		return getJcrSession(((ProvidedContent) content).getSession(), jcrWorkspace);
+	}
+
+	/*
+	 * WRITE
+	 */
+	public Node openForEdit(ProvidedSession contentSession, String jcrWorkspace, String jcrPath) {
+		try {
+			if (contentSession.isEditing()) {
+				JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(contentSession);
+				return sessionAdapter.openForEdit(jcrWorkspace, jcrPath);
+			} else {
+				return getJcrSession(contentSession, jcrWorkspace).getNode(jcrPath);
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot open for edit " + jcrPath + " in workspace " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
+	public void persist(ProvidedSession contentSession) {
+		try {
+			JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(contentSession);
+			sessionAdapter.persist();
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot persist " + contentSession, e);
+		}
 	}
 
 	@Override
