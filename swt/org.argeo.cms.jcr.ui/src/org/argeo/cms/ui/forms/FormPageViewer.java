@@ -305,7 +305,7 @@ public class FormPageViewer extends AbstractPageViewer {
 
 	protected CmsImageManager<Control, Node> imageManager() {
 		if (imageManager == null)
-			imageManager = (CmsImageManager<Control, Node>) CmsSwtUtils.getCmsView(mainSection).getImageManager();
+			imageManager = CmsSwtUtils.getCmsView(mainSection).getImageManager();
 		return imageManager;
 	}
 

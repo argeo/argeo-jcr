@@ -53,8 +53,7 @@ public class Img extends EditableImage implements SectionPart, NodePart {
 			CmsImageManager<Control, Node> imageManager) throws RepositoryException {
 		super(parent, swtStyle, imgNode, false, preferredImageSize);
 		this.section = section;
-		this.imageManager = imageManager != null ? imageManager
-				: (CmsImageManager<Control, Node>) CmsSwtUtils.getCmsView(section).getImageManager();
+		this.imageManager = imageManager != null ? imageManager : CmsSwtUtils.getCmsView(section).getImageManager();
 		CmsSwtUtils.style(this, TextStyles.TEXT_IMG);
 	}
 
