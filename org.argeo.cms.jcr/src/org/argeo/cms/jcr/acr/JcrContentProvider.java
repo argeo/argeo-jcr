@@ -62,9 +62,17 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	}
 
 	@Override
+	public String getMountPath() {
+		return mountPath;
+	}
+
+	/*
+	 * READ
+	 */
+
+	@Override
 	public ProvidedContent get(ProvidedSession contentSession, String relativePath) {
-		String jcrPath = "/" + relativePath;
-		return new JcrContent(contentSession, this, jcrWorkspace, jcrPath);
+		return new JcrContent(contentSession, this, jcrWorkspace, toJcrPath(relativePath));
 	}
 
 	@Override
@@ -98,7 +106,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	/*
 	 * WRITE
 	 */
-	public Node openForEdit(ProvidedSession contentSession, String jcrWorkspace, String jcrPath) {
+	Node openForEdit(ProvidedSession contentSession, String jcrWorkspace, String jcrPath) {
 		try {
 			if (contentSession.isEditing()) {
 				JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(contentSession);
@@ -121,21 +129,37 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		}
 	}
 
+	/*
+	 * EDITING
+	 */
+
 	@Override
-	public String getMountPath() {
-		return mountPath;
+	public void openForEdit(ProvidedSession session, String relativePath) {
+		openForEdit(session, relativePath, toJcrPath(relativePath));
 	}
 
-	public synchronized <T> T doInAdminSession(Function<Session, T> toDo) {
+	@Override
+	public void freeze(ProvidedSession session, String relativePath) {
 		try {
-			return toDo.apply(adminSession);
-		} finally {
-			try {
-				if (adminSession.hasPendingChanges())
-					adminSession.save();
-			} catch (RepositoryException e) {
-				throw new JcrException("Cannot save admin session", e);
+			String jcrPath = toJcrPath(relativePath);
+			if (session.isEditing()) {
+				JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(session);
+				sessionAdapter.freeze(jcrWorkspace, jcrPath);
 			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot freeze " + relativePath + " in workspace " + jcrWorkspace, e);
+		}
+	}
+
+	@Override
+	public boolean isOpenForEdit(ProvidedSession session, String relativePath) {
+		try {
+			String jcrPath = toJcrPath(relativePath);
+			JcrSessionAdapter sessionAdapter = getJcrSessionAdapter(session);
+			return sessionAdapter.isOpenForEdit(jcrWorkspace, jcrPath);
+		} catch (RepositoryException e) {
+			throw new JcrException(
+					"Cannot check whether " + relativePath + " is open for edit in workspace " + jcrWorkspace, e);
 		}
 	}
 
@@ -228,4 +252,33 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		}
 
 	}
+
+	/*
+	 * UTILITIES
+	 */
+	/**
+	 * Just adds a '/' so that it becomes an absolute JCR path within the JCR
+	 * workspace of this provider.
+	 */
+	private String toJcrPath(String relativePath) {
+		return ContentUtils.SLASH + relativePath;
+	}
+
+	/*
+	 * TRANSITIONAL, WHILE MIGRATING FROM JCR TO ACR
+	 */
+	@Deprecated
+	public synchronized <T> T doInAdminSession(Function<Session, T> toDo) {
+		try {
+			return toDo.apply(adminSession);
+		} finally {
+			try {
+				if (adminSession.hasPendingChanges())
+					adminSession.save();
+			} catch (RepositoryException e) {
+				throw new JcrException("Cannot save admin session", e);
+			}
+		}
+	}
+
 }

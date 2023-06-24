@@ -123,6 +123,24 @@ class JcrSessionAdapter {
 		return node;
 	}
 
+	public synchronized Node freeze(String workspace, String jcrPath) throws RepositoryException {
+		Session session = getWriteSession(workspace);
+		Node node = session.getNode(jcrPath);
+		if (node.isNodeType(NodeType.MIX_SIMPLE_VERSIONABLE)) {
+			VersionManager versionManager = session.getWorkspace().getVersionManager();
+			if (versionManager.isCheckedOut(jcrPath)) {
+				versionManager.checkin(jcrPath);
+			}
+		}
+		return node;
+	}
+
+	public synchronized boolean isOpenForEdit(String workspace, String jcrPath) throws RepositoryException {
+		Session session = getWriteSession(workspace);
+		VersionManager versionManager = session.getWorkspace().getVersionManager();
+		return versionManager.isCheckedOut(jcrPath);
+	}
+
 	public synchronized void persist() throws RepositoryException {
 		for (String workspace : writeSessions.keySet()) {
 			Session session = writeSessions.get(workspace);
