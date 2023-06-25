@@ -54,6 +54,16 @@ public class JcrContent extends AbstractContent {
 
 	private final boolean isMountBase;
 
+	/* OPTIMISATIONS */
+	/**
+	 * While we want to support thread-safe access, it is very likely that only
+	 * thread and only one sesssion will be used (typically from a single-threaded
+	 * UI). We therefore cache was long as the same thread is calling.
+	 */
+	private Thread lastRetrievingThread = null;
+	private Node cachedNode = null;
+	private boolean caching = true;
+
 	protected JcrContent(ProvidedSession session, JcrContentProvider provider, String jcrWorkspace, String jcrPath) {
 		super(session);
 		this.provider = provider;
@@ -78,10 +88,13 @@ public class JcrContent extends AbstractContent {
 		return NamespaceUtils.parsePrefixedName(provider, name);
 	}
 
-//	@SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	@Override
 	public <A> Optional<A> get(QName key, Class<A> clss) {
 		Object value = get(getJcrNode(), key.toString());
+		if (value instanceof List<?> lst)
+			return Optional.of((A) lst);
+		// TODO check other collections?
 		return CrAttributeType.cast(clss, value);
 	}
 
@@ -187,6 +200,14 @@ public class JcrContent extends AbstractContent {
 	@Override
 	public int getSiblingIndex() {
 		return Jcr.getIndex(getJcrNode());
+	}
+
+	/*
+	 * MAP OPTIMISATIONS
+	 */
+	@Override
+	public boolean containsKey(Object key) {
+		return Jcr.hasProperty(getJcrNode(), key.toString());
 	}
 
 	/*
@@ -503,8 +524,17 @@ public class JcrContent extends AbstractContent {
 
 	protected Node getJcrNode() {
 		try {
-			// TODO caching?
-			return getJcrSession().getNode(jcrPath);
+			if (caching) {
+				synchronized (this) {
+					if (lastRetrievingThread != Thread.currentThread()) {
+						cachedNode = getJcrSession().getNode(jcrPath);
+						lastRetrievingThread = Thread.currentThread();
+					}
+					return cachedNode;
+				}
+			} else {
+				return getJcrSession().getNode(jcrPath);
+			}
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot retrieve " + jcrPath + " from workspace " + jcrWorkspace, e);
 		}
