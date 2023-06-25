@@ -24,9 +24,7 @@ import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.service.ResourceManager;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.widgets.Display;
 
 /** Manages only public images so far. */
 public class DefaultImageManager extends AbstractSwtImageManager<Node> {
@@ -62,14 +60,14 @@ public class DefaultImageManager extends AbstractSwtImageManager<Node> {
 		}
 	}
 
-	public Image getSwtImage(Node node) {
+	public ImageData getSwtImageData(Node node) {
 		InputStream inputStream = null;
 		Binary binary = getImageBinary(node);
 		if (binary == null)
 			return null;
 		try {
 			inputStream = binary.getStream();
-			return new Image(Display.getCurrent(), inputStream);
+			return new ImageData(inputStream);
 		} catch (RepositoryException e) {
 			throw new JcrException(e);
 		} finally {

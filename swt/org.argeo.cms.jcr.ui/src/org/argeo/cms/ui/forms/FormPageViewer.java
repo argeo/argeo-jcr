@@ -188,7 +188,7 @@ public class FormPageViewer extends AbstractPageViewer {
 			// use control AFTER setting style, since it may have been reset
 			if (part instanceof EditableImage) {
 				EditableImage editableImage = (EditableImage) part;
-				imageManager().load(partNode, part.getControl(), editableImage.getPreferredImageSize());
+				imageManager().load(partNode, part.getControl(), editableImage.getPreferredImageSize(), null);
 			}
 		}
 	}

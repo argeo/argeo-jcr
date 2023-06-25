@@ -168,7 +168,7 @@ public class JcrContent extends AbstractContent {
 		try {
 			// Note: it is important to to use the default way (recursing through parents),
 			// since the session may not have access to parent nodes
-			return ContentUtils.ROOT_SLASH + jcrWorkspace + getJcrNode().getPath();
+			return Content.ROOT_PATH + jcrWorkspace + getJcrNode().getPath();
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot get depth of " + getJcrNode(), e);
 		}
@@ -552,7 +552,7 @@ public class JcrContent extends AbstractContent {
 			if (contentSession == null)
 				throw new IllegalArgumentException(
 						"Cannot adapt " + node + " to content, because it was not loaded from a content session");
-			return contentSession.get(ContentUtils.SLASH + CmsConstants.SYS_WORKSPACE + node.getPath());
+			return contentSession.get(Content.ROOT_PATH + CmsConstants.SYS_WORKSPACE + node.getPath());
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot adapt " + node + " to a content", e);
 		}

@@ -79,7 +79,7 @@ public class Img extends EditableImage implements SectionPart, NodePart {
 	@Override
 	protected synchronized Boolean load(Control lbl) {
 		Node imgNode = getNode();
-		boolean loaded = imageManager.load(imgNode, lbl, getPreferredImageSize());
+		boolean loaded = imageManager.load(imgNode, lbl, getPreferredImageSize(), null);
 		// getParent().layout();
 		return loaded;
 	}

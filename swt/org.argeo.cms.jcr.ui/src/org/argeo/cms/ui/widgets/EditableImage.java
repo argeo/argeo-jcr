@@ -83,7 +83,7 @@ public abstract class EditableImage extends StyledControl {
 		if (control != null) {
 			((Label) control).setText(imgTag);
 			control.setSize(preferredImageSize != null
-					? new Point(preferredImageSize.getWidth(), preferredImageSize.getHeight())
+					? new Point(preferredImageSize.width(), preferredImageSize.height())
 					: getSize());
 		} else {
 			loaded = false;
