@@ -15,7 +15,7 @@ swt/org.argeo.cms.jcr.ui \
 DEP_CATEGORIES = \
 org.argeo.tp \
 org.argeo.tp.jcr \
-osgi/api/org.argeo.tp.osgi \
+osgi/equinox/org.argeo.tp.osgi \
 osgi/equinox/org.argeo.tp.eclipse \
 swt/rap/org.argeo.tp.swt \
 swt/rap/org.argeo.tp.swt.workbench \
