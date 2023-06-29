@@ -188,7 +188,7 @@ public class FormPageViewer extends AbstractPageViewer {
 			// use control AFTER setting style, since it may have been reset
 			if (part instanceof EditableImage) {
 				EditableImage editableImage = (EditableImage) part;
-				imageManager().load(partNode, part.getControl(), editableImage.getPreferredImageSize());
+				imageManager().load(partNode, part.getControl(), editableImage.getPreferredImageSize(), null);
 			}
 		}
 	}
@@ -305,7 +305,7 @@ public class FormPageViewer extends AbstractPageViewer {
 
 	protected CmsImageManager<Control, Node> imageManager() {
 		if (imageManager == null)
-			imageManager = (CmsImageManager<Control, Node>) CmsSwtUtils.getCmsView(mainSection).getImageManager();
+			imageManager = CmsSwtUtils.getCmsView(mainSection).getImageManager();
 		return imageManager;
 	}
 

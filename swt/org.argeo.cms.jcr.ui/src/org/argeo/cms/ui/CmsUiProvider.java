@@ -36,7 +36,7 @@ public interface CmsUiProvider extends SwtUiProvider {
 		if (context == null)
 			return createUiPart(parent, (Node) null);
 		if (context instanceof JcrContent) {
-			Node node = ((JcrContent) context).getJcrNode();
+			Node node = context.adapt(Node.class);
 			return createUiPart(parent, node);
 		} else {
 //			CmsLog.getLog(CmsUiProvider.class)

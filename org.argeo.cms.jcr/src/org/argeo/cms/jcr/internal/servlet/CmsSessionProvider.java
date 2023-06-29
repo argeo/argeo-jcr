@@ -159,7 +159,7 @@ public class CmsSessionProvider implements SessionProvider, Serializable {
 		private void checkValid() {
 			if (!cmsSession.isValid())
 				throw new IllegalStateException(
-						"CMS session " + cmsSession.getUuid() + " is not valid since " + cmsSession.getEnd());
+						"CMS session " + cmsSession.uuid() + " is not valid since " + cmsSession.getEnd());
 		}
 
 		protected void close() {

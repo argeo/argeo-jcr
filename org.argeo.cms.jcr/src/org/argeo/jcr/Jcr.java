@@ -432,6 +432,20 @@ public class Jcr {
 	}
 
 	/**
+	 * Whether this node has this property.
+	 * 
+	 * @see Node#hasProperty(String)
+	 * @throws JcrException caused by {@link RepositoryException}
+	 */
+	public static boolean hasProperty(Node node, String property) {
+		try {
+			return node.hasProperty(property);
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot check whether " + node + " has property " + property, e);
+		}
+	}
+
+	/**
 	 * Set a property to the given value, or remove it if the value is
 	 * <code>null</code>.
 	 * 
@@ -603,6 +617,7 @@ public class Jcr {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <T> T getAs(Node node, String property, Class<T> clss) {
 		if (String.class.isAssignableFrom(clss)) {
 			return (T) get(node, property);
