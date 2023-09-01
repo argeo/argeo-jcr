@@ -1,7 +1,5 @@
 package org.argeo.cms.ui.util;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -12,16 +10,14 @@ import javax.servlet.http.HttpServletRequest;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.ux.Cms2DSize;
 import org.argeo.api.cms.ux.CmsView;
+import org.argeo.cms.acr.ContentUtils;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.cms.swt.CmsSwtUtils;
-import org.argeo.cms.ui.CmsUiConstants;
 import org.argeo.cms.ux.AbstractImageManager;
 import org.argeo.cms.ux.CmsUxUtils;
 import org.argeo.jcr.JcrUtils;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.service.ResourceManager;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -82,24 +78,22 @@ public class CmsUiUtils {
 
 	/** Clean reserved URL characters for use in HTTP links. */
 	public static String getDataPathForUrl(Node node) {
-		return CmsSwtUtils.cleanPathForUrl(getDataPath(node));
+		return ContentUtils.cleanPathForUrl(getDataPath(node));
 	}
 
 	/** @deprecated Use rowData16px() instead. GridData should not be reused. */
 	@Deprecated
 	public static RowData ROW_DATA_16px = new RowData(16, 16);
 
-	
-
 	/*
 	 * FORM LAYOUT
 	 */
 
-	
+	public final static String ITEM_HEIGHT = "org.eclipse.rap.rwt.customItemHeight";
 
 	@Deprecated
 	public static void setItemHeight(Table table, int height) {
-		table.setData(CmsUiConstants.ITEM_HEIGHT, height);
+		table.setData(ITEM_HEIGHT, height);
 	}
 
 	//
