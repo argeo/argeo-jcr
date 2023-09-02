@@ -85,11 +85,13 @@ class BasicSearchToQom {
 				javax.jcr.query.qom.Constraint currQomConstraint = toQomConstraint(constraints.get(0));
 				for (int i = 1; i < constraints.size(); i++) {
 					Constraint c = constraints.get(i);
-					if (where.isUnion()) {
-						currQomConstraint = factory.or(currQomConstraint, toQomConstraint(c));
-					} else {
-						currQomConstraint = factory.and(currQomConstraint, toQomConstraint(c));
-					}
+					javax.jcr.query.qom.Constraint subQomConstraint = toQomConstraint(c);
+					if (subQomConstraint != null) // isContentClass leads to null QOM constraint
+						if (where.isUnion()) {
+							currQomConstraint = factory.or(currQomConstraint, subQomConstraint);
+						} else {
+							currQomConstraint = factory.and(currQomConstraint, subQomConstraint);
+						}
 				}
 				qomConstraint = currQomConstraint;
 			}
