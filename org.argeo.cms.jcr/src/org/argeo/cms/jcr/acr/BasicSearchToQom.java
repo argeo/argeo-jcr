@@ -64,7 +64,7 @@ class BasicSearchToQom {
 	}
 
 	private javax.jcr.query.qom.Constraint toQomConstraint(Constraint constraint) throws RepositoryException {
-		javax.jcr.query.qom.Constraint qomConstraint;
+//		javax.jcr.query.qom.Constraint qomConstraint;
 		if (constraint instanceof ContentFilter<?> where) {
 			List<Constraint> constraints = new ArrayList<>();
 			for (Constraint c : where.getConstraints()) {
@@ -78,22 +78,32 @@ class BasicSearchToQom {
 			}
 
 			if (constraints.isEmpty()) {
-				qomConstraint = null;
+				return null;
 			} else if (constraints.size() == 1) {
-				qomConstraint = toQomConstraint(constraints.get(0));
+				return toQomConstraint(constraints.get(0));
 			} else {
 				javax.jcr.query.qom.Constraint currQomConstraint = toQomConstraint(constraints.get(0));
+				// QOM constraint may be null because only content classes where specified
+				while (currQomConstraint == null) {
+					constraints.remove(0);
+					if (constraints.isEmpty())
+						return null;
+					currQomConstraint = toQomConstraint(constraints.get(0));
+				}
+				assert currQomConstraint != null : "currQomConstraint is null : " + constraints.get(0);
 				for (int i = 1; i < constraints.size(); i++) {
 					Constraint c = constraints.get(i);
 					javax.jcr.query.qom.Constraint subQomConstraint = toQomConstraint(c);
-					if (subQomConstraint != null) // isContentClass leads to null QOM constraint
+					if (subQomConstraint != null) { // isContentClass leads to null QOM constraint
+						assert subQomConstraint != null : "subQomConstraint";
 						if (where.isUnion()) {
 							currQomConstraint = factory.or(currQomConstraint, subQomConstraint);
 						} else {
 							currQomConstraint = factory.and(currQomConstraint, subQomConstraint);
 						}
+					}
 				}
-				qomConstraint = currQomConstraint;
+				return currQomConstraint;
 			}
 
 		} else if (constraint instanceof Eq comp) {
@@ -102,13 +112,12 @@ class BasicSearchToQom {
 			// TODO better convert attribute value
 			StaticOperand staticOperand = factory
 					.literal(session.getValueFactory().createValue(comp.getValue().toString()));
-			qomConstraint = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,
-					staticOperand);
+			return factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, staticOperand);
 		} else if (constraint instanceof Not not) {
-			qomConstraint = factory.not(toQomConstraint(not.getNegated()));
+			return factory.not(toQomConstraint(not.getNegated()));
 		} else {
 			throw new IllegalArgumentException("Constraint " + constraint.getClass() + " is not supported");
 		}
-		return qomConstraint;
+//		return qomConstraint;
 	}
 }
