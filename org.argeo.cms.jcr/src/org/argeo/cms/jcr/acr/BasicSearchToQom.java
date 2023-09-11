@@ -31,16 +31,19 @@ class BasicSearchToQom {
 	private Session session;
 	private QueryManager queryManager;
 	private BasicSearch basicSearch;
-	QueryObjectModelFactory factory;
+	private QueryObjectModelFactory factory;
 
-	QName contentClass = null;
+	private String relPath;
 
-	String selectorName = "content";
+	private QName contentClass = null;
+
+	private String selectorName = "content";
 
 	public BasicSearchToQom(Session session, BasicSearch basicSearch, String relPath) throws RepositoryException {
 		this.session = session;
 		this.queryManager = session.getWorkspace().getQueryManager();
 		this.basicSearch = basicSearch;
+		this.relPath = relPath;
 		factory = queryManager.getQOMFactory();
 	}
 
@@ -52,6 +55,10 @@ class BasicSearchToQom {
 		javax.jcr.query.qom.Constraint qomConstraint = toQomConstraint(where);
 		if (contentClass == null)
 			throw new IllegalArgumentException("No content class specified");
+
+		if (relPath != null) {
+			qomConstraint = factory.and(qomConstraint, factory.descendantNode(selectorName, "/" + relPath));
+		}
 
 		Selector source = factory.selector(NamespaceUtils.toPrefixedName(contentClass), selectorName);
 
