@@ -44,6 +44,7 @@ import org.argeo.cms.acr.ContentUtils;
 import org.argeo.jcr.Jcr;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
+import org.argeo.jcr.JcrxApi;
 
 /** A JCR {@link Node} accessed as {@link Content}. */
 public class JcrContent extends AbstractContent {
@@ -200,6 +201,13 @@ public class JcrContent extends AbstractContent {
 	@Override
 	public int getSiblingIndex() {
 		return Jcr.getIndex(getJcrNode());
+	}
+	
+	
+
+	@Override
+	public String getText() {
+		return  JcrxApi.getXmlValue(getJcrNode());
 	}
 
 	/*
