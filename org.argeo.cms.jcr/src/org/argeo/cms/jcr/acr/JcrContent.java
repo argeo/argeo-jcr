@@ -36,6 +36,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.argeo.api.acr.Content;
 import org.argeo.api.acr.CrAttributeType;
+import org.argeo.api.acr.DName;
 import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
@@ -92,7 +93,38 @@ public class JcrContent extends AbstractContent {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <A> Optional<A> get(QName key, Class<A> clss) {
-		Object value = get(getJcrNode(), key.toString());
+		Node node = getJcrNode();
+		if (DName.creationdate.equals(key))
+			key = JcrName.created.qName();
+		else if (DName.getlastmodified.equals(key))
+			key = JcrName.lastModified.qName();
+		else if (DName.checkedOut.equals(key)) {
+			try {
+				if (!node.hasProperty(Property.JCR_IS_CHECKED_OUT))
+					return Optional.empty();
+				boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
+				if (!isCheckedOut)
+					return Optional.empty();
+				// FIXME return URI
+				return (Optional<A>) Optional.of(new Object());
+			} catch (RepositoryException e) {
+				throw new JcrException(e);
+			}
+		} else if (DName.checkedIn.equals(key)) {
+			try {
+				if (!node.hasProperty(Property.JCR_IS_CHECKED_OUT))
+					return Optional.empty();
+				boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
+				if (isCheckedOut)
+					return Optional.empty();
+				// FIXME return URI
+				return (Optional<A>) Optional.of(new Object());
+			} catch (RepositoryException e) {
+				throw new JcrException(e);
+			}
+		}
+
+		Object value = get(node, key.toString());
 		if (value instanceof List<?> lst)
 			return Optional.of((A) lst);
 		// TODO check other collections?
@@ -111,12 +143,23 @@ public class JcrContent extends AbstractContent {
 	@Override
 	protected Iterable<QName> keys() {
 		try {
+			Node node = getJcrNode();
 			Set<QName> keys = new HashSet<>();
-			for (PropertyIterator propertyIterator = getJcrNode().getProperties(); propertyIterator.hasNext();) {
+			for (PropertyIterator propertyIterator = node.getProperties(); propertyIterator.hasNext();) {
 				Property property = propertyIterator.nextProperty();
-				// TODO convert standard names
-				// TODO skip technical properties
 				QName name = NamespaceUtils.parsePrefixedName(provider, property.getName());
+
+				// TODO convert standard names
+				if (property.getName().equals(Property.JCR_CREATED))
+					name = DName.creationdate.qName();
+				if (property.getName().equals(Property.JCR_LAST_MODIFIED))
+					name = DName.getlastmodified.qName();
+				if (property.getName().equals(Property.JCR_IS_CHECKED_OUT)) {
+					boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
+					name = isCheckedOut ? DName.checkedOut.qName() : DName.checkedIn.qName();
+				}
+
+				// TODO skip technical properties
 				keys.add(name);
 			}
 			return keys;
@@ -202,12 +245,10 @@ public class JcrContent extends AbstractContent {
 	public int getSiblingIndex() {
 		return Jcr.getIndex(getJcrNode());
 	}
-	
-	
 
 	@Override
 	public String getText() {
-		return  JcrxApi.getXmlValue(getJcrNode());
+		return JcrxApi.getXmlValue(getJcrNode());
 	}
 
 	/*

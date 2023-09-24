@@ -1,8 +1,11 @@
 package org.argeo.cms.jcr.acr;
 
+import static javax.jcr.query.qom.QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.QueryManager;
@@ -15,12 +18,14 @@ import javax.jcr.query.qom.StaticOperand;
 import javax.xml.namespace.QName;
 
 import org.apache.jackrabbit.commons.query.sql2.QOMFormatter;
+import org.argeo.api.acr.DName;
 import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.search.BasicSearch;
 import org.argeo.api.acr.search.Constraint;
 import org.argeo.api.acr.search.ContentFilter;
 import org.argeo.api.acr.search.ContentFilter.Eq;
 import org.argeo.api.acr.search.ContentFilter.IsContentClass;
+import org.argeo.api.acr.search.ContentFilter.IsDefined;
 import org.argeo.api.acr.search.ContentFilter.Not;
 import org.argeo.api.cms.CmsLog;
 
@@ -114,14 +119,29 @@ class BasicSearchToQom {
 			}
 
 		} else if (constraint instanceof Eq comp) {
-			DynamicOperand dynamicOperand = factory.propertyValue(selectorName,
-					NamespaceUtils.toPrefixedName(comp.getProp()));
+			QName prop = comp.getProp();
+			if (DName.creationdate.equals(prop))
+				prop = JcrName.created.qName();
+			else if (DName.getlastmodified.equals(prop))
+				prop = JcrName.lastModified.qName();
+
+			DynamicOperand dynamicOperand = factory.propertyValue(selectorName, NamespaceUtils.toPrefixedName(prop));
 			// TODO better convert attribute value
 			StaticOperand staticOperand = factory
 					.literal(session.getValueFactory().createValue(comp.getValue().toString()));
-			return factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO, staticOperand);
+			return factory.comparison(dynamicOperand, JCR_OPERATOR_EQUAL_TO, staticOperand);
 		} else if (constraint instanceof Not not) {
 			return factory.not(toQomConstraint(not.getNegated()));
+		} else if (constraint instanceof IsDefined comp) {
+			QName prop = comp.getProp();
+			if (DName.checkedIn.equals(prop) || DName.checkedOut.equals(prop)) {
+				DynamicOperand dynamicOperand = factory.propertyValue(selectorName, Property.JCR_IS_CHECKED_OUT);
+				StaticOperand staticOperand = factory
+						.literal(session.getValueFactory().createValue(DName.checkedOut.equals(prop)));
+				return factory.comparison(dynamicOperand, JCR_OPERATOR_EQUAL_TO, staticOperand);
+			} else {
+				return factory.propertyExistence(selectorName, NamespaceUtils.toPrefixedName(prop));
+			}
 		} else {
 			throw new IllegalArgumentException("Constraint " + constraint.getClass() + " is not supported");
 		}
