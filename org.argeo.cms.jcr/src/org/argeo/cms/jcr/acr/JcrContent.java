@@ -3,22 +3,28 @@ package org.argeo.cms.jcr.acr;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
+import javax.jcr.Binary;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.Property;
@@ -93,13 +99,27 @@ public class JcrContent extends AbstractContent {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <A> Optional<A> get(QName key, Class<A> clss) {
-		Node node = getJcrNode();
-		if (DName.creationdate.equals(key))
-			key = JcrName.created.qName();
-		else if (DName.getlastmodified.equals(key))
-			key = JcrName.lastModified.qName();
-		else if (DName.checkedOut.equals(key)) {
-			try {
+		try {
+			Node node = getJcrNode();
+			if (DName.creationdate.equals(key))
+				key = JcrName.created.qName();
+			else if (DName.getlastmodified.equals(key))
+				key = JcrName.lastModified.qName();
+			else if (DName.getcontenttype.equals(key)) {
+				String contentType = null;
+				if (node.isNodeType(NodeType.NT_FILE)) {
+					Node content = node.getNode(Node.JCR_CONTENT);
+					if (content.isNodeType(NodeType.MIX_MIMETYPE)) {
+						contentType = content.getProperty(Property.JCR_MIMETYPE).getString();
+						if (content.hasProperty(Property.JCR_ENCODING))
+							contentType = contentType + ";encoding="
+									+ content.getProperty(Property.JCR_ENCODING).getString();
+					}
+				}
+				if (contentType == null)
+					contentType = "application/octet-stream";
+				return CrAttributeType.cast(clss, contentType);
+			} else if (DName.checkedOut.equals(key)) {
 				if (!node.hasProperty(Property.JCR_IS_CHECKED_OUT))
 					return Optional.empty();
 				boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
@@ -107,11 +127,7 @@ public class JcrContent extends AbstractContent {
 					return Optional.empty();
 				// FIXME return URI
 				return (Optional<A>) Optional.of(new Object());
-			} catch (RepositoryException e) {
-				throw new JcrException(e);
-			}
-		} else if (DName.checkedIn.equals(key)) {
-			try {
+			} else if (DName.checkedIn.equals(key)) {
 				if (!node.hasProperty(Property.JCR_IS_CHECKED_OUT))
 					return Optional.empty();
 				boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
@@ -119,16 +135,16 @@ public class JcrContent extends AbstractContent {
 					return Optional.empty();
 				// FIXME return URI
 				return (Optional<A>) Optional.of(new Object());
-			} catch (RepositoryException e) {
-				throw new JcrException(e);
 			}
-		}
 
-		Object value = get(node, key.toString());
-		if (value instanceof List<?> lst)
-			return Optional.of((A) lst);
-		// TODO check other collections?
-		return CrAttributeType.cast(clss, value);
+			Object value = get(node, key.toString());
+			if (value instanceof List<?> lst)
+				return Optional.of((A) lst);
+			// TODO check other collections?
+			return CrAttributeType.cast(clss, value);
+		} catch (RepositoryException e) {
+			throw new JcrException(e);
+		}
 	}
 
 	@Override
@@ -152,9 +168,11 @@ public class JcrContent extends AbstractContent {
 				// TODO convert standard names
 				if (property.getName().equals(Property.JCR_CREATED))
 					name = DName.creationdate.qName();
-				if (property.getName().equals(Property.JCR_LAST_MODIFIED))
+				else if (property.getName().equals(Property.JCR_LAST_MODIFIED))
 					name = DName.getlastmodified.qName();
-				if (property.getName().equals(Property.JCR_IS_CHECKED_OUT)) {
+				else if (property.getName().equals(Property.JCR_MIMETYPE))
+					name = DName.getcontenttype.qName();
+				else if (property.getName().equals(Property.JCR_IS_CHECKED_OUT)) {
 					boolean isCheckedOut = node.getProperty(Property.JCR_IS_CHECKED_OUT).getBoolean();
 					name = isCheckedOut ? DName.checkedOut.qName() : DName.checkedIn.qName();
 				}
@@ -203,7 +221,7 @@ public class JcrContent extends AbstractContent {
 			}
 		} catch (RepositoryException e) {
 			throw new JcrException(
-					"Cannot check multiplicityof property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
+					"Cannot check multiplicity of property " + p + " of " + jcrPath + " in " + jcrWorkspace, e);
 		}
 	}
 
@@ -271,28 +289,67 @@ public class JcrContent extends AbstractContent {
 
 	@Override
 	public Content add(QName name, QName... classes) {
-		if (classes.length > 0) {
-			QName primaryType = classes[0];
-			Node node = openForEdit();
-			Node child = Jcr.addNode(node, name.toString(), primaryType.toString());
-			for (int i = 1; i < classes.length; i++) {
-				try {
-					child.addMixin(classes[i].toString());
-				} catch (RepositoryException e) {
-					throw new JcrException("Cannot add child to " + getJcrNode(), e);
-				}
-			}
+		try {
+			Node child;
+			if (classes.length > 0) {
+				QName primaryType = classes[0];
+				Node node = openForEdit();
+				child = Jcr.addNode(node, name.toString(), primaryType.toString());
 
-		} else {
-			Jcr.addNode(getJcrNode(), name.toString(), NodeType.NT_UNSTRUCTURED);
+				for (int i = 1; i < classes.length; i++)
+					child.addMixin(classes[i].toString());
+
+				if (NtType.file.qName().equals(primaryType)) {
+					// TODO optimise when we have a proper save mechanism
+					Node content = child.addNode(Node.JCR_CONTENT, NodeType.NT_UNSTRUCTURED);
+//					Binary binary;
+//					try (InputStream in = new ByteArrayInputStream(new byte[0])) {
+//						binary = content.getSession().getValueFactory().createBinary(in);
+//						content.setProperty(Property.JCR_DATA, binary);
+//					} catch (IOException e) {
+//						throw new UncheckedIOException(e);
+//					}
+					child.getSession().save();
+				}
+			} else {
+				child = Jcr.addNode(getJcrNode(), name.toString(), NodeType.NT_UNSTRUCTURED);
+			}
+			return new JcrContent(getSession(), provider, jcrWorkspace, child.getPath());
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot add child to " + jcrPath + " in " + jcrWorkspace, e);
 		}
-		return null;
+	}
+
+	@Override
+	public Content add(QName name, Map<QName, Object> attrs, QName... classes) {
+		if (attrs.containsKey(DName.getcontenttype.qName())) {
+			List<QName> lst = new ArrayList<>(Arrays.asList(classes));
+			lst.add(0, NtType.file.qName());
+			classes = lst.toArray(new QName[lst.size()]);
+		}
+		if (attrs.containsKey(DName.collection.qName())) {
+			List<QName> lst = Arrays.asList(classes);
+			lst.add(0, NtType.folder.qName());
+			classes = lst.toArray(new QName[lst.size()]);
+		}
+		Content child = add(name, classes);
+		child.putAll(attrs);
+		return child;
 	}
 
 	@Override
 	public void remove() {
 		Node node = openForEdit();
 		Jcr.remove(node);
+		saveJcrSession();
+	}
+
+	private void saveJcrSession() {
+		try {
+			getJcrSession().save();
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot persist " + jcrPath + " in " + jcrWorkspace, e);
+		}
 	}
 
 	@Override
@@ -306,22 +363,57 @@ public class JcrContent extends AbstractContent {
 				throw new JcrException("Cannot remove property " + key + " from " + getJcrNode(), e);
 			}
 		}
-
+		saveJcrSession();
 	}
 
 	@Override
 	public Object put(QName key, Object value) {
+		Objects.requireNonNull(value, "Value cannot be null");
+		Node node = openForEdit();
 		try {
-			String property = NamespaceUtils.toFullyQualified(key);
-			Node node = openForEdit();
+			if (DName.checkedIn.equals(key) || DName.checkedOut.equals(key))
+				throw new IllegalArgumentException(
+						key + " cannot be set, use the openForEdit/freeze methods of the related content provider.");
+
 			Object old = null;
-			if (node.hasProperty(property)) {
-				old = convertSingleValue(node.getProperty(property).getValue());
+			String property;
+			if (DName.creationdate.equals(key))
+				property = Property.JCR_CREATED;
+			else if (DName.getlastmodified.equals(key))
+				property = Property.JCR_LAST_MODIFIED;
+			else if (DName.getcontenttype.equals(key)) {
+				if (!node.isNodeType(NodeType.NT_FILE))
+					throw new IllegalStateException(DName.getcontenttype + " can only be set on a file");
+				Node content = node.getNode(Node.JCR_CONTENT);
+				old = Jcr.get(content, Property.JCR_MIMETYPE);
+				if (old != null && Jcr.hasProperty(content, Property.JCR_ENCODING))
+					old = old + ";encoding=" + Jcr.get(content, Property.JCR_ENCODING);
+				String[] str = value.toString().split(";");
+				String mimeType = str[0].trim();
+				String encoding = null;
+				if (str.length > 1) {
+					value = str[0].trim();
+					String[] eq = str[1].split("=");
+					assert eq.length == 2;
+					if ("encoding".equals(eq[0].trim()))
+						encoding = eq[1];
+				}
+				content.setProperty(Property.JCR_MIMETYPE, mimeType);
+				if (encoding != null)
+					content.setProperty(Property.JCR_ENCODING, encoding);
+				property = null;
+			} else
+				property = NamespaceUtils.toFullyQualified(key);
+
+			if (property != null) {
+				if (node.hasProperty(property)) {
+					old = convertSingleValue(node.getProperty(property).getValue());
+				}
+				Value newValue = convertSingleObject(node.getSession().getValueFactory(), value);
+				node.setProperty(property, newValue);
 			}
-			Value newValue = convertSingleObject(node.getSession().getValueFactory(), value);
-			node.setProperty(property, newValue);
 			// FIXME proper edition
-			node.getSession().save();
+			saveJcrSession();
 			return old;
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot set property " + key + " on " + jcrPath + " in " + jcrWorkspace, e);
@@ -344,7 +436,7 @@ public class JcrContent extends AbstractContent {
 				node.addMixin(nodeType.getName());
 			}
 			// FIXME proper edition
-			node.getSession().save();
+			saveJcrSession();
 		} catch (RepositoryException e) {
 			throw new JcrException(
 					"Cannot add content classes " + contentClass + " to " + jcrPath + " in " + jcrWorkspace, e);
@@ -414,15 +506,50 @@ public class JcrContent extends AbstractContent {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <C extends Closeable> C open(Class<C> clss) throws IOException, IllegalArgumentException {
-		if (InputStream.class.isAssignableFrom(clss)) {
-			Node node = getJcrNode();
-			if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
-				try {
+		try {
+			if (InputStream.class.isAssignableFrom(clss)) {
+				Node node = getJcrNode();
+				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					return (C) JcrUtils.getFileAsStream(node);
-				} catch (RepositoryException e) {
-					throw new JcrException("Cannot open " + jcrPath + " in workspace " + jcrWorkspace, e);
+				}
+			} else if (OutputStream.class.isAssignableFrom(clss)) {
+				Node node = getJcrNode();
+				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
+					Node content = node.getNode(Node.JCR_CONTENT);
+					PipedInputStream in = new PipedInputStream();
+					ValueFactory valueFactory = getJcrSession().getValueFactory();
+					CompletableFuture<Void> done = CompletableFuture.runAsync(() -> {
+						try {
+							Binary binary = valueFactory.createBinary(in);
+							content.setProperty(Property.JCR_DATA, binary);
+							saveJcrSession();
+						} catch (RepositoryException e) {
+							throw new JcrException(
+									"Cannot create binary in " + jcrPath + " in workspace " + jcrWorkspace, e);
+						}
+					});
+					PipedOutputStream out = new PipedOutputStream(in) {
+
+						@Override
+						public void close() throws IOException {
+							super.flush();
+							super.close();
+							done.join();
+//							Binary binary = done.join();
+//							try {
+//								content.setProperty(Property.JCR_DATA, binary);
+//							} catch (RepositoryException e) {
+//								throw new JcrException(
+//										"Cannot write binary to " + jcrPath + " in workspace " + jcrWorkspace, e);
+//							}
+//							saveJcrSession();
+						}
+					};
+					return (C) out;
 				}
 			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot open " + jcrPath + " in workspace " + jcrWorkspace, e);
 		}
 		return super.open(clss);
 	}
@@ -537,6 +664,8 @@ public class JcrContent extends AbstractContent {
 			// primary node type
 			NodeType primaryType = context.getPrimaryNodeType();
 			res.add(nodeTypeToQName(primaryType));
+			if (primaryType.getName().equals(NodeType.NT_FOLDER))
+				res.add(DName.collection.qName());
 
 			Set<QName> secondaryTypes = new TreeSet<>(NamespaceUtils.QNAME_COMPARATOR);
 			for (NodeType mixinType : context.getMixinNodeTypes()) {
