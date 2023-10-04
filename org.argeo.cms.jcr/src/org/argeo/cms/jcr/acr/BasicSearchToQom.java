@@ -23,10 +23,16 @@ import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.search.BasicSearch;
 import org.argeo.api.acr.search.Constraint;
 import org.argeo.api.acr.search.ContentFilter;
-import org.argeo.api.acr.search.ContentFilter.Eq;
-import org.argeo.api.acr.search.ContentFilter.IsContentClass;
-import org.argeo.api.acr.search.ContentFilter.IsDefined;
-import org.argeo.api.acr.search.ContentFilter.Not;
+import org.argeo.api.acr.search.Eq;
+import org.argeo.api.acr.search.Gt;
+import org.argeo.api.acr.search.Gte;
+import org.argeo.api.acr.search.IsContentClass;
+import org.argeo.api.acr.search.IsDefined;
+import org.argeo.api.acr.search.Like;
+import org.argeo.api.acr.search.Lt;
+import org.argeo.api.acr.search.Lte;
+import org.argeo.api.acr.search.Not;
+import org.argeo.api.acr.search.PropertyValueContraint;
 import org.argeo.api.cms.CmsLog;
 
 /** Convert an ACR basic search to a JCR query. */
@@ -118,7 +124,7 @@ class BasicSearchToQom {
 				return currQomConstraint;
 			}
 
-		} else if (constraint instanceof Eq comp) {
+		} else if (constraint instanceof PropertyValueContraint comp) {
 			QName prop = comp.getProp();
 			if (DName.creationdate.equals(prop))
 				prop = JcrName.created.qName();
@@ -128,8 +134,28 @@ class BasicSearchToQom {
 			DynamicOperand dynamicOperand = factory.propertyValue(selectorName, NamespaceUtils.toPrefixedName(prop));
 			// TODO better convert attribute value
 			StaticOperand staticOperand = factory
-					.literal(session.getValueFactory().createValue(comp.getValue().toString()));
-			return factory.comparison(dynamicOperand, JCR_OPERATOR_EQUAL_TO, staticOperand);
+					.literal(JcrContent.convertSingleObject(session.getValueFactory(), comp.getValue()));
+			javax.jcr.query.qom.Constraint res;
+			if (comp instanceof Eq)
+				res = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_EQUAL_TO,
+						staticOperand);
+			else if (comp instanceof Lt)
+				res = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN,
+						staticOperand);
+			else if (comp instanceof Lte)
+				res = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_LESS_THAN_OR_EQUAL_TO,
+						staticOperand);
+			else if (comp instanceof Gt)
+				res = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN,
+						staticOperand);
+			else if (comp instanceof Gte)
+				res = factory.comparison(dynamicOperand,
+						QueryObjectModelConstants.JCR_OPERATOR_GREATER_THAN_OR_EQUAL_TO, staticOperand);
+			else if (comp instanceof Like)
+				res = factory.comparison(dynamicOperand, QueryObjectModelConstants.JCR_OPERATOR_LIKE, staticOperand);
+			else
+				throw new UnsupportedOperationException("Constraint of type " + comp.getClass() + " is not supported");
+			return res;
 		} else if (constraint instanceof Not not) {
 			return factory.not(toQomConstraint(not.getNegated()));
 		} else if (constraint instanceof IsDefined comp) {
