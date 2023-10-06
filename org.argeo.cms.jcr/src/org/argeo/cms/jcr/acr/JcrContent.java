@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 
 import javax.jcr.Binary;
@@ -48,6 +47,7 @@ import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.cms.acr.AbstractContent;
 import org.argeo.cms.acr.ContentUtils;
+import org.argeo.cms.util.AsyncPipedOutputStream;
 import org.argeo.jcr.Jcr;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
@@ -301,7 +301,7 @@ public class JcrContent extends AbstractContent {
 
 				if (NtType.file.qName().equals(primaryType)) {
 					// TODO optimise when we have a proper save mechanism
-					Node content = child.addNode(Node.JCR_CONTENT, NodeType.NT_UNSTRUCTURED);
+					child.addNode(Node.JCR_CONTENT, NodeType.NT_UNSTRUCTURED);
 //					Binary binary;
 //					try (InputStream in = new ByteArrayInputStream(new byte[0])) {
 //						binary = content.getSession().getValueFactory().createBinary(in);
@@ -516,35 +516,48 @@ public class JcrContent extends AbstractContent {
 				Node node = getJcrNode();
 				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					Node content = node.getNode(Node.JCR_CONTENT);
-					PipedInputStream in = new PipedInputStream();
+					AsyncPipedOutputStream out = new AsyncPipedOutputStream();
+
 					ValueFactory valueFactory = getJcrSession().getValueFactory();
-					CompletableFuture<Void> done = CompletableFuture.runAsync(() -> {
+					out.asyncRead((in) -> {
 						try {
 							Binary binary = valueFactory.createBinary(in);
 							content.setProperty(Property.JCR_DATA, binary);
 							saveJcrSession();
+//							System.out.println("Binary written");
 						} catch (RepositoryException e) {
 							throw new JcrException(
 									"Cannot create binary in " + jcrPath + " in workspace " + jcrWorkspace, e);
 						}
 					});
-					PipedOutputStream out = new PipedOutputStream(in) {
-
-						@Override
-						public void close() throws IOException {
-							super.flush();
-							super.close();
-							done.join();
-//							Binary binary = done.join();
-//							try {
-//								content.setProperty(Property.JCR_DATA, binary);
-//							} catch (RepositoryException e) {
-//								throw new JcrException(
-//										"Cannot write binary to " + jcrPath + " in workspace " + jcrWorkspace, e);
-//							}
+//					
+//					PipedInputStream in = new PipedInputStream() {
+//
+//						@Override
+//						public void close() throws IOException {
+//							System.out.println("Piped IN closing...");
+//							super.close();
+//						}
+//					};
+//					CompletableFuture<Void> done = CompletableFuture.runAsync(() -> {
+//						try {
+//							Binary binary = valueFactory.createBinary(in);
+//							content.setProperty(Property.JCR_DATA, binary);
 //							saveJcrSession();
-						}
-					};
+//						} catch (RepositoryException e) {
+//							throw new JcrException(
+//									"Cannot create binary in " + jcrPath + " in workspace " + jcrWorkspace, e);
+//						}
+//					});
+//					PipedOutputStream out = new PipedOutputStream(in) {
+//						@Override
+//						public void close() throws IOException {
+//							super.flush();
+//							System.out.println("Piped OUT closing...");
+//							super.close();
+//							done.join();
+//						}
+//					};
 					return (C) out;
 				}
 			}
