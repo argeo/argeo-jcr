@@ -64,8 +64,8 @@ public class JcrContent extends AbstractContent {
 
 	/* OPTIMISATIONS */
 	/**
-	 * While we want to support thread-safe access, it is very likely that only
-	 * thread and only one sesssion will be used (typically from a single-threaded
+	 * While we want to support thread-safe access, it is very likely that only one
+	 * thread and only one session will be used (typically from a single-threaded
 	 * UI). We therefore cache was long as the same thread is calling.
 	 */
 	private Thread lastRetrievingThread = null;
@@ -341,12 +341,13 @@ public class JcrContent extends AbstractContent {
 	public void remove() {
 		Node node = openForEdit();
 		Jcr.remove(node);
-		saveJcrSession();
+		saveEditedNode(node);
 	}
 
-	private void saveJcrSession() {
+	private void saveEditedNode(Node node) {
 		try {
-			getJcrSession().save();
+			node.getSession().save();
+			getJcrSession().refresh(true);
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot persist " + jcrPath + " in " + jcrWorkspace, e);
 		}
@@ -363,7 +364,7 @@ public class JcrContent extends AbstractContent {
 				throw new JcrException("Cannot remove property " + key + " from " + getJcrNode(), e);
 			}
 		}
-		saveJcrSession();
+		saveEditedNode(node);
 	}
 
 	@Override
@@ -413,7 +414,7 @@ public class JcrContent extends AbstractContent {
 				node.setProperty(property, newValue);
 			}
 			// FIXME proper edition
-			saveJcrSession();
+			saveEditedNode(node);
 			return old;
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot set property " + key + " on " + jcrPath + " in " + jcrWorkspace, e);
@@ -436,7 +437,7 @@ public class JcrContent extends AbstractContent {
 				node.addMixin(nodeType.getName());
 			}
 			// FIXME proper edition
-			saveJcrSession();
+			saveEditedNode(node);
 		} catch (RepositoryException e) {
 			throw new JcrException(
 					"Cannot add content classes " + contentClass + " to " + jcrPath + " in " + jcrWorkspace, e);
@@ -509,11 +510,13 @@ public class JcrContent extends AbstractContent {
 		try {
 			if (InputStream.class.isAssignableFrom(clss)) {
 				Node node = getJcrNode();
+				System.out.println(node.getSession());
 				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					return (C) JcrUtils.getFileAsStream(node);
 				}
 			} else if (OutputStream.class.isAssignableFrom(clss)) {
-				Node node = getJcrNode();
+				Node node = openForEdit();
+				System.out.println(node.getSession());
 				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					Node content = node.getNode(Node.JCR_CONTENT);
 					AsyncPipedOutputStream out = new AsyncPipedOutputStream();
@@ -523,41 +526,12 @@ public class JcrContent extends AbstractContent {
 						try {
 							Binary binary = valueFactory.createBinary(in);
 							content.setProperty(Property.JCR_DATA, binary);
-							saveJcrSession();
-//							System.out.println("Binary written");
+							saveEditedNode(node);
 						} catch (RepositoryException e) {
 							throw new JcrException(
 									"Cannot create binary in " + jcrPath + " in workspace " + jcrWorkspace, e);
 						}
 					});
-//					
-//					PipedInputStream in = new PipedInputStream() {
-//
-//						@Override
-//						public void close() throws IOException {
-//							System.out.println("Piped IN closing...");
-//							super.close();
-//						}
-//					};
-//					CompletableFuture<Void> done = CompletableFuture.runAsync(() -> {
-//						try {
-//							Binary binary = valueFactory.createBinary(in);
-//							content.setProperty(Property.JCR_DATA, binary);
-//							saveJcrSession();
-//						} catch (RepositoryException e) {
-//							throw new JcrException(
-//									"Cannot create binary in " + jcrPath + " in workspace " + jcrWorkspace, e);
-//						}
-//					});
-//					PipedOutputStream out = new PipedOutputStream(in) {
-//						@Override
-//						public void close() throws IOException {
-//							super.flush();
-//							System.out.println("Piped OUT closing...");
-//							super.close();
-//							done.join();
-//						}
-//					};
 					return (C) out;
 				}
 			}
@@ -710,7 +684,14 @@ public class JcrContent extends AbstractContent {
 	 * COMMON UTILITIES
 	 */
 	protected Session getJcrSession() {
-		return provider.getJcrSession(getSession(), jcrWorkspace);
+		Session s = provider.getJcrSession(getSession(), jcrWorkspace);
+//		if (getSession().isEditing())
+//			try {
+//				s.refresh(false);
+//			} catch (RepositoryException e) {
+//				throw new JcrException("Cannot refresh session", e);
+//			}
+		return s;
 	}
 
 	protected Node getJcrNode() {
