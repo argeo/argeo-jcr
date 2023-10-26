@@ -510,13 +510,13 @@ public class JcrContent extends AbstractContent {
 		try {
 			if (InputStream.class.isAssignableFrom(clss)) {
 				Node node = getJcrNode();
-				System.out.println(node.getSession());
+//				System.out.println(node.getSession());
 				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					return (C) JcrUtils.getFileAsStream(node);
 				}
 			} else if (OutputStream.class.isAssignableFrom(clss)) {
 				Node node = openForEdit();
-				System.out.println(node.getSession());
+//				System.out.println(node.getSession());
 				if (Jcr.isNodeType(node, NodeType.NT_FILE)) {
 					Node content = node.getNode(Node.JCR_CONTENT);
 					AsyncPipedOutputStream out = new AsyncPipedOutputStream();
