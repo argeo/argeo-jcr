@@ -292,6 +292,15 @@ public class JcrContent extends AbstractContent {
 		try {
 			Node child;
 			if (classes.length > 0) {
+				classes: for (int i = 0; i < classes.length; i++) {
+					if (classes[i].equals(DName.collection.qName())) {
+						List<QName> lst = new ArrayList<>(Arrays.asList(classes));
+						lst.add(0, NtType.folder.qName());
+						lst.remove(DName.collection.qName());
+						classes = lst.toArray(new QName[lst.size()]);
+						break classes;
+					}
+				}
 				QName primaryType = classes[0];
 				Node node = openForEdit();
 				child = Jcr.addNode(node, name.toString(), primaryType.toString());
@@ -327,11 +336,7 @@ public class JcrContent extends AbstractContent {
 			lst.add(0, NtType.file.qName());
 			classes = lst.toArray(new QName[lst.size()]);
 		}
-		if (attrs.containsKey(DName.collection.qName())) {
-			List<QName> lst = Arrays.asList(classes);
-			lst.add(0, NtType.folder.qName());
-			classes = lst.toArray(new QName[lst.size()]);
-		}
+
 		Content child = add(name, classes);
 		child.putAll(attrs);
 		return child;
