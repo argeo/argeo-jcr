@@ -107,20 +107,33 @@ class JcrSessionAdapter {
 	public synchronized Node openForEdit(String workspace, String jcrPath) throws RepositoryException {
 		Session session = getWriteSession(workspace);
 		Node node = session.getNode(jcrPath);
-		if (node.isNodeType(NodeType.MIX_SIMPLE_VERSIONABLE)) {
-			VersionManager versionManager = session.getWorkspace().getVersionManager();
-			if (versionManager.isCheckedOut(jcrPath)) {
+		VersionManager versionManager = session.getWorkspace().getVersionManager();
+
+		Node versionedAncestor = findVersionedAncestor(node);
+		boolean checkedOut = versionManager.isCheckedOut(jcrPath);
+
+		if (versionedAncestor != null) {
+			if (checkedOut) {
 				if (!checkedOutModified.containsKey(workspace))
 					checkedOutModified.put(workspace, new TreeSet<>());
-				checkedOutModified.get(workspace).add(jcrPath);
+				checkedOutModified.get(workspace).add(versionedAncestor.getPath());
 			} else {
 				if (!checkedInModified.containsKey(workspace))
 					checkedInModified.put(workspace, new TreeSet<>());
-				checkedInModified.get(workspace).add(jcrPath);
-				versionManager.checkout(jcrPath);
+				checkedInModified.get(workspace).add(versionedAncestor.getPath());
+				versionManager.checkout(versionedAncestor.getPath());
 			}
 		}
 		return node;
+	}
+
+	private Node findVersionedAncestor(Node node) throws RepositoryException {
+		if (node.isNodeType(NodeType.MIX_SIMPLE_VERSIONABLE))
+			return node;
+		Node parent = node.getParent();
+		if (parent == null)
+			return null;
+		return findVersionedAncestor(parent);
 	}
 
 	public synchronized Node freeze(String workspace, String jcrPath) throws RepositoryException {

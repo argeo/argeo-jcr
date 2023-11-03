@@ -290,6 +290,7 @@ public class JcrContent extends AbstractContent {
 	@Override
 	public Content add(QName name, QName... classes) {
 		try {
+			Node node = openForEdit();
 			Node child;
 			if (classes.length > 0) {
 				classes: for (int i = 0; i < classes.length; i++) {
@@ -302,7 +303,6 @@ public class JcrContent extends AbstractContent {
 					}
 				}
 				QName primaryType = classes[0];
-				Node node = openForEdit();
 				child = Jcr.addNode(node, name.toString(), primaryType.toString());
 
 				for (int i = 1; i < classes.length; i++)
@@ -311,18 +311,11 @@ public class JcrContent extends AbstractContent {
 				if (NtType.file.qName().equals(primaryType)) {
 					// TODO optimise when we have a proper save mechanism
 					child.addNode(Node.JCR_CONTENT, NodeType.NT_UNSTRUCTURED);
-//					Binary binary;
-//					try (InputStream in = new ByteArrayInputStream(new byte[0])) {
-//						binary = content.getSession().getValueFactory().createBinary(in);
-//						content.setProperty(Property.JCR_DATA, binary);
-//					} catch (IOException e) {
-//						throw new UncheckedIOException(e);
-//					}
-					child.getSession().save();
 				}
 			} else {
-				child = Jcr.addNode(getJcrNode(), name.toString(), NodeType.NT_UNSTRUCTURED);
+				child = Jcr.addNode(node, name.toString(), NodeType.NT_UNSTRUCTURED);
 			}
+			saveEditedNode(node);
 			return new JcrContent(getSession(), provider, jcrWorkspace, child.getPath());
 		} catch (RepositoryException e) {
 			throw new JcrException("Cannot add child to " + jcrPath + " in " + jcrWorkspace, e);
