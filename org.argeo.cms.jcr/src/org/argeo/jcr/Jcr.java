@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import javax.jcr.Binary;
 import javax.jcr.ItemNotFoundException;
@@ -595,6 +596,7 @@ public class Jcr {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getAs(Node node, String property, T defaultValue) {
+		Objects.requireNonNull(defaultValue);
 		try {
 			// TODO deal with multiple
 			if (node.hasProperty(property)) {
@@ -619,13 +621,30 @@ public class Jcr {
 
 	@SuppressWarnings("unchecked")
 	public static <T> T getAs(Node node, String property, Class<T> clss) {
-		if (String.class.isAssignableFrom(clss)) {
-			return (T) get(node, property);
-		} else if (Long.class.isAssignableFrom(clss)) {
-			return (T) get(node, property);
-		} else {
-			throw new IllegalArgumentException("Unsupported format " + clss);
+		try {
+			Property p = node.getProperty(property);
+			try {
+				if (p.isMultiple()) {
+					throw new UnsupportedOperationException("Multiple values properties are not supported");
+				}
+				Value value = p.getValue();
+				return (T) get(value);
+			} catch (ClassCastException e) {
+				throw new IllegalArgumentException(
+						"Cannot cast property of type " + PropertyType.nameFromValue(p.getType()), e);
+			}
+		} catch (RepositoryException e) {
+			throw new JcrException("Cannot retrieve property " + property + " from " + node, e);
 		}
+//		if (String.class.isAssignableFrom(clss)) {
+//			return (T) get(node, property);
+//		} else if (Long.class.isAssignableFrom(clss)) {
+//			return (T) get(node, property);
+//		} else if (Boolean.class.isAssignableFrom(clss)) {
+//			return (T) get(node, property);
+//		} else {
+//			throw new IllegalArgumentException("Unsupported format " + clss);
+//		}
 	}
 
 	/**
