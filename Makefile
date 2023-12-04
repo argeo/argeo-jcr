@@ -21,6 +21,8 @@ DEP_CATEGORIES = \
 org.argeo.tp \
 org.argeo.tp.build \
 org.argeo.tp.jcr \
+org.argeo.tp.httpd \
+org.argeo.tp.sys \
 org.argeo.tp.sdk \
 org.argeo.tp.utils \
 osgi/equinox/org.argeo.tp.osgi \
