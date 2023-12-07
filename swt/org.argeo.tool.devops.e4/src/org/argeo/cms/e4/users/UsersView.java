@@ -3,9 +3,9 @@ package org.argeo.cms.e4.users;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 
 import org.argeo.api.acr.ldap.LdapAttr;
 import org.argeo.api.acr.ldap.LdapObj;

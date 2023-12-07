@@ -2,8 +2,8 @@ package org.argeo.cms.e4.users.handlers;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.argeo.cms.auth.UserAdminUtils;
 import org.argeo.cms.e4.users.GroupsView;

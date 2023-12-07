@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.argeo.cms.swt.CmsException;
 import org.argeo.cms.util.LangUtils;

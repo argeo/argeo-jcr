@@ -2,7 +2,7 @@ package org.argeo.cms.e4.jcr.handlers;
 
 import java.util.List;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 

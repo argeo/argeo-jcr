@@ -2,7 +2,7 @@ package org.argeo.cms.e4.parts;
 
 import java.time.ZonedDateTime;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.argeo.api.cms.CmsSession;
 import org.argeo.cms.CurrentUser;

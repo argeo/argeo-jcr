@@ -2,7 +2,7 @@ package org.argeo.cms.e4.jcr;
 
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.jcr.Node;
 
 import org.argeo.cms.ui.jcr.model.SingleJcrNodeElem;

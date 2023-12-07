@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.argeo.api.acr.ldap.LdapAttr;
 import org.argeo.api.cms.CmsConstants;

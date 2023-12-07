@@ -3,7 +3,7 @@ package org.argeo.cms.e4.users.handlers;
 import java.util.Dictionary;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.argeo.api.acr.ldap.LdapAttr;
 import org.argeo.cms.e4.users.UserAdminWrapper;

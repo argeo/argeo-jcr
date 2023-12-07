@@ -3,7 +3,7 @@ package org.argeo.cms.e4.monitoring;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.argeo.cms.ux.widgets.TreeParent;
 import org.eclipse.e4.ui.di.Focus;

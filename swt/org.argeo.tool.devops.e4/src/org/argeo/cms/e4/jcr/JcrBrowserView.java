@@ -2,9 +2,9 @@ package org.argeo.cms.e4.jcr;
 
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import javax.jcr.Repository;

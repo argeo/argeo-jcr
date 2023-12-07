@@ -3,8 +3,8 @@ package org.argeo.cms.e4.jcr.handlers;
 import java.net.URI;
 import java.util.Hashtable;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryFactory;

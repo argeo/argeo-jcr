@@ -3,7 +3,7 @@
 
 package org.argeo.cms.e4.monitoring;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.argeo.eclipse.ui.ColumnViewerComparator;
 import org.argeo.eclipse.ui.specific.EclipseUiSpecificUtils;
