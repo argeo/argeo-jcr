@@ -74,9 +74,9 @@ class BasicSearchToQom {
 		Selector source = factory.selector(NamespaceUtils.toPrefixedName(contentClass), selectorName);
 
 		QueryObjectModel qom = factory.createQuery(source, qomConstraint, null, null);
-		if (log.isDebugEnabled()) {
+		if (log.isTraceEnabled()) {
 			String sql2 = QOMFormatter.format(qom);
-			log.debug("JCR query:\n" + sql2 + "\n");
+			log.trace("JCR query:\n" + sql2 + "\n");
 		}
 		return qom;
 	}
