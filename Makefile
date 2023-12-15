@@ -10,12 +10,13 @@ A2_CATEGORY = org.argeo.cms.jcr
 
 BUNDLES = \
 org.argeo.cms.jcr \
-org.argeo.slc.repo \
-org.argeo.slc.rpmfactory \
-org.argeo.slc.jcr \
 swt/org.argeo.cms.jcr.ui \
 swt/org.argeo.tool.swt \
 swt/org.argeo.tool.devops.e4 \
+
+#org.argeo.slc.repo \
+#org.argeo.slc.rpmfactory \
+#org.argeo.slc.jcr \
 
 DEP_CATEGORIES = \
 org.argeo.tp \
