@@ -1,0 +1,7 @@
+Import-Package: javax.jcr.nodetype,\
+javax.jcr.security,\
+org.apache.jackrabbit.api,\
+org.apache.jackrabbit.commons,\
+*
+
+Provide-Capability: cms.datamodel;name=slc;cnd=/org/argeo/slc/jcr/slc.cnd
