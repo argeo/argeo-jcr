@@ -10,7 +10,7 @@ public class CmsJcrActivator implements BundleActivator {
 	private static BundleContext bundleContext;
 
 //	private List<Runnable> stopHooks = new ArrayList<>();
-	private StatisticsThread kernelThread;
+//	private StatisticsThread kernelThread;
 
 //	private JackrabbitRepositoryContextsFactory repositoryServiceFactory;
 //	private CmsJcrDeployment jcrDeployment;
@@ -20,9 +20,9 @@ public class CmsJcrActivator implements BundleActivator {
 		bundleContext = context;
 		
 		// kernel thread
-		kernelThread = new StatisticsThread("Kernel Thread");
-		kernelThread.setContextClassLoader(getClass().getClassLoader());
-		kernelThread.start();
+//		kernelThread = new StatisticsThread("CMS JCR statistics Thread");
+//		kernelThread.setContextClassLoader(getClass().getClassLoader());
+//		kernelThread.start();
 
 		// JCR
 //		repositoryServiceFactory = new JackrabbitRepositoryContextsFactory();
@@ -60,8 +60,8 @@ public class CmsJcrActivator implements BundleActivator {
 //		if (repositoryServiceFactory != null)
 //			repositoryServiceFactory.shutdown();
 
-		if (kernelThread != null)
-			kernelThread.destroyAndJoin();
+//		if (kernelThread != null)
+//			kernelThread.destroyAndJoin();
 
 		bundleContext = null;
 	}
