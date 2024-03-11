@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.argeo.api.cms.CmsSession;
-import org.argeo.cms.RoleNameUtils;
+import org.argeo.api.cms.auth.RoleNameUtils;
 import org.argeo.cms.util.LangUtils;
 import org.argeo.eclipse.ui.ColumnViewerComparator;
 import org.eclipse.e4.ui.di.Focus;
