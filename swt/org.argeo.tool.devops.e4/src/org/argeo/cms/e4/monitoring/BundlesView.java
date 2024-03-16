@@ -3,10 +3,7 @@
 
 package org.argeo.cms.e4.monitoring;
 
-import jakarta.annotation.PostConstruct;
-
 import org.argeo.eclipse.ui.ColumnViewerComparator;
-import org.argeo.eclipse.ui.specific.EclipseUiSpecificUtils;
 import org.eclipse.e4.ui.di.Focus;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
@@ -18,6 +15,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+
+import jakarta.annotation.PostConstruct;
 
 /**
  * Overview of the bundles as a table. Equivalent to Equinox 'ss' console
@@ -33,7 +32,7 @@ public class BundlesView {
 		viewer.setContentProvider(new BundleContentProvider());
 		viewer.getTable().setHeaderVisible(true);
 
-		EclipseUiSpecificUtils.enableToolTipSupport(viewer);
+		//EclipseUiSpecificUtils.enableToolTipSupport(viewer);
 
 		// ID
 		TableViewerColumn column = new TableViewerColumn(viewer, SWT.NONE);

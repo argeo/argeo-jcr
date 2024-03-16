@@ -46,7 +46,7 @@ import org.argeo.api.acr.NamespaceUtils;
 import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.cms.acr.AbstractContent;
-import org.argeo.cms.acr.ContentUtils;
+import org.argeo.cms.acr.CmsContent;
 import org.argeo.cms.util.AsyncPipedOutputStream;
 import org.argeo.jcr.Jcr;
 import org.argeo.jcr.JcrException;
@@ -78,7 +78,7 @@ public class JcrContent extends AbstractContent {
 		this.jcrWorkspace = jcrWorkspace;
 		this.jcrPath = jcrPath;
 
-		this.isMountBase = ContentUtils.SLASH_STRING.equals(jcrPath);
+		this.isMountBase = "/".equals(jcrPath);
 	}
 
 	/*
@@ -90,7 +90,7 @@ public class JcrContent extends AbstractContent {
 		String name = Jcr.getName(getJcrNode());
 		if (name.equals("")) {// root
 			String mountPath = provider.getMountPath();
-			name = ContentUtils.getParentPath(mountPath)[1];
+			name = CmsContent.getParentPath(mountPath)[1];
 			// name = Jcr.getWorkspaceName(getJcrNode());
 		}
 		return NamespaceUtils.parsePrefixedName(provider, name);
@@ -251,7 +251,7 @@ public class JcrContent extends AbstractContent {
 			String mountPath = provider.getMountPath();
 			if (mountPath == null || mountPath.equals("/"))
 				return null;
-			String[] parent = ContentUtils.getParentPath(mountPath);
+			String[] parent = CmsContent.getParentPath(mountPath);
 			return getSession().get(parent[0]);
 		}
 //		if (Jcr.isRoot(getJcrNode())) // root
@@ -455,9 +455,9 @@ public class JcrContent extends AbstractContent {
 
 	@Override
 	public boolean isParentAccessible() {
-		String jcrParentPath = ContentUtils.getParentPath(jcrPath)[0];
+		String jcrParentPath = CmsContent.getParentPath(jcrPath)[0];
 		if ("".equals(jcrParentPath)) // JCR root node
-			jcrParentPath = ContentUtils.SLASH_STRING;
+			jcrParentPath = "/";
 		try {
 			return getJcrSession().hasPermission(jcrParentPath, Session.ACTION_READ);
 		} catch (RepositoryException e) {

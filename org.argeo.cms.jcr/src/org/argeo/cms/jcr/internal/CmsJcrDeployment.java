@@ -42,7 +42,6 @@ import org.argeo.jcr.JcrUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.wiring.BundleCapability;
@@ -54,7 +53,7 @@ import org.osgi.util.tracker.ServiceTracker;
 /** Implementation of a CMS deployment. */
 public class CmsJcrDeployment {
 	private final CmsLog log = CmsLog.getLog(getClass());
-	private final BundleContext bc = FrameworkUtil.getBundle(getClass()).getBundleContext();
+	private BundleContext bc;
 
 	private DataModels dataModels;
 	private String webDavConfig = JcrHttpUtils.WEBDAV_CONFIG;
@@ -66,8 +65,13 @@ public class CmsJcrDeployment {
 
 	private ProvidedRepository contentRepository;
 
-//	CmsDeployment cmsDeployment;
-	public void start() {
+	public CmsJcrDeployment() {
+	}
+
+	// CmsDeployment cmsDeployment;
+	public void start(BundleContext bundleContext) {
+		// Bundle bundle = FrameworkUtil.getBundle(CmsJcrDeployment.class);
+		bc = bundleContext;
 		dataModels = new DataModels(bc);
 
 		contentRepository.registerTypes(JcrContentNamespace.values());

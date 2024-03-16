@@ -25,7 +25,7 @@ import org.argeo.api.acr.spi.ContentProvider;
 import org.argeo.api.acr.spi.ProvidedContent;
 import org.argeo.api.acr.spi.ProvidedSession;
 import org.argeo.api.cms.CmsConstants;
-import org.argeo.cms.acr.ContentUtils;
+import org.argeo.cms.acr.CmsContent;
 import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.jcr.JcrException;
 import org.argeo.jcr.JcrUtils;
@@ -48,7 +48,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 		if ("/".equals(mountPath))
 			throw new IllegalArgumentException("JCR content provider cannot be root /");
 		Objects.requireNonNull(mountPath);
-		jcrWorkspace = ContentUtils.getParentPath(mountPath)[1];
+		jcrWorkspace = CmsContent.getParentPath(mountPath)[1];
 		adminSession = CmsJcrUtils.openDataAdminSession(jcrRepository, jcrWorkspace);
 	}
 
@@ -77,7 +77,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 
 	@Override
 	public boolean exists(ProvidedSession contentSession, String relativePath) {
-		String jcrPath = ContentUtils.SLASH + relativePath;
+		String jcrPath = '/' + relativePath;
 		return new JcrContent(contentSession, this, jcrWorkspace, jcrPath).exists();
 	}
 
@@ -261,7 +261,7 @@ public class JcrContentProvider implements ContentProvider, NamespaceContext {
 	 * workspace of this provider.
 	 */
 	private String toJcrPath(String relativePath) {
-		return ContentUtils.SLASH + relativePath;
+		return '/' + relativePath;
 	}
 
 	/*

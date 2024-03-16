@@ -7,13 +7,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import jakarta.annotation.PostConstruct;
-
 import org.argeo.api.cms.CmsSession;
-import org.argeo.cms.RoleNameUtils;
+import org.argeo.api.cms.auth.RoleNameUtils;
 import org.argeo.cms.util.LangUtils;
 import org.argeo.eclipse.ui.ColumnViewerComparator;
-import org.argeo.eclipse.ui.specific.EclipseUiSpecificUtils;
 import org.eclipse.e4.ui.di.Focus;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
@@ -26,6 +23,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+
+import jakarta.annotation.PostConstruct;
 
 /**
  * Overview of the active CMS sessions.
@@ -41,7 +40,7 @@ public class CmsSessionsView {
 		viewer.setContentProvider(new CmsSessionContentProvider());
 		viewer.getTable().setHeaderVisible(true);
 
-		EclipseUiSpecificUtils.enableToolTipSupport(viewer);
+		//EclipseUiSpecificUtils.enableToolTipSupport(viewer);
 
 		int longColWidth = 150;
 		int smallColWidth = 100;
