@@ -26,6 +26,7 @@ import javax.servlet.Servlet;
 import org.apache.jackrabbit.commons.cnd.CndImporter;
 import org.apache.jackrabbit.core.RepositoryContext;
 import org.apache.jackrabbit.core.RepositoryImpl;
+import org.apache.jackrabbit.util.TransientFileFactory;
 import org.argeo.api.acr.spi.ProvidedRepository;
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.CmsLog;
@@ -107,6 +108,8 @@ public class CmsJcrDeployment {
 			log.error("Cannot clean repositories", e1);
 		}
 
+		// If not called a daemon thread is kept, which is a problem with multi runtimes
+		TransientFileFactory.shutdown();
 	}
 
 //	public void setCmsDeployment(CmsDeployment cmsDeployment) {
