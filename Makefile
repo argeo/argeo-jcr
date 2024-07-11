@@ -26,6 +26,7 @@ org.argeo.tp.httpd \
 org.argeo.tp.sys \
 org.argeo.tp.sdk \
 org.argeo.tp.utils \
+osgi/equinox/org.argeo.tp.osgi.framework \
 osgi/equinox/org.argeo.tp.osgi \
 osgi/equinox/org.argeo.tp.eclipse \
 swt/rap/org.argeo.tp.swt \
