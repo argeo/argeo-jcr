@@ -22,6 +22,7 @@ import org.argeo.api.cms.CmsLog;
 import org.argeo.api.cms.CmsSession;
 import org.argeo.cms.auth.RemoteAuthUtils;
 import org.argeo.cms.servlet.ServletHttpRequest;
+import org.argeo.cms.servlet.javax.JavaxServletHttpRequest;
 import org.argeo.jcr.JcrUtils;
 
 /**
@@ -48,7 +49,7 @@ public class CmsSessionProvider implements SessionProvider, Serializable {
 //		if (workspace == null)
 //			return null;
 
-		CmsSession cmsSession = RemoteAuthUtils.getCmsSession(new ServletHttpRequest(request));
+		CmsSession cmsSession = RemoteAuthUtils.getCmsSession(new JavaxServletHttpRequest(request));
 		// CmsSessionImpl cmsSession = WebCmsSessionImpl.getCmsSession(request);
 		if (log.isTraceEnabled()) {
 			log.trace("Get JCR session from " + cmsSession);

@@ -5,7 +5,7 @@ import java.net.URL;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.ux.Cms2DSize;
