@@ -15,6 +15,7 @@ import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.cms.swt.CmsSwtUtils;
 import org.argeo.cms.ux.AbstractImageManager;
 import org.argeo.cms.ux.CmsUxUtils;
+import org.argeo.jcr.Jcr;
 import org.argeo.jcr.JcrUtils;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.service.ResourceManager;
@@ -69,12 +70,14 @@ public class CmsUiUtils {
 
 	/** A path in the node repository */
 	public static String getDataPath(Node node) {
-		return getDataPath(CmsConstants.EGO_REPOSITORY, node);
+		// FIXME make it more generic
+		return CmsConstants.PATH_API_ACR + "/" + CmsConstants.SYS_WORKSPACE + Jcr.getPath(node);
+//		return getDataPath(CmsConstants.EGO_REPOSITORY, node);
 	}
 
-	public static String getDataPath(String cn, Node node) {
-		return CmsJcrUtils.getDataPath(cn, node);
-	}
+//	public static String getDataPath(String cn, Node node) {
+//		return CmsJcrUtils.getDataPath(cn, node);
+//	}
 
 	/** Clean reserved URL characters for use in HTTP links. */
 	public static String getDataPathForUrl(Node node) {

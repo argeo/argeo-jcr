@@ -228,13 +228,13 @@ public class CmsJcrUtils {
 		}
 	}
 
-	/**
-	 * Translate the path to this node into a path containing the name of the
-	 * repository and the name of the workspace.
-	 */
-	public static String getDataPath(Node node) {
-		return getDataPath(CmsConstants.NODE, node);
-	}
+//	/**
+//	 * Translate the path to this node into a path containing the name of the
+//	 * repository and the name of the workspace.
+//	 */
+//	public static String getDataPath(Node node) {
+//		return getDataPath(CmsConstants.NODE, node);
+//	}
 
 	/**
 	 * Open a JCR session with full read/write rights on the data, as

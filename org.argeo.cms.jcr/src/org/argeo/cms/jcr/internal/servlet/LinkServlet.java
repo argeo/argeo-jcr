@@ -193,15 +193,15 @@ public class LinkServlet extends HttpServlet {
 		}
 	}
 
-	private String getDataUrl(Node node, HttpServletRequest request) throws RepositoryException {
-		try {
-			StringBuilder buf = getServerBaseUrl(request);
-			buf.append(CmsJcrUtils.getDataPath(CmsConstants.EGO_REPOSITORY, node));
-			return new URL(buf.toString()).toString();
-		} catch (MalformedURLException e) {
-			throw new IllegalArgumentException("Cannot build data URL for " + node, e);
-		}
-	}
+//	private String getDataUrl(Node node, HttpServletRequest request) throws RepositoryException {
+//		try {
+//			StringBuilder buf = getServerBaseUrl(request);
+//			buf.append(CmsJcrUtils.getDataPath(CmsConstants.EGO_REPOSITORY, node));
+//			return new URL(buf.toString()).toString();
+//		} catch (MalformedURLException e) {
+//			throw new IllegalArgumentException("Cannot build data URL for " + node, e);
+//		}
+//	}
 
 	// public static String getDataPath(Node node) throws
 	// RepositoryException {
