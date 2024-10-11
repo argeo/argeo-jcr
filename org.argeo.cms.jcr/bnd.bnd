@@ -7,7 +7,6 @@ cms.datamodel;name=ldap; cnd=/org/argeo/cms/jcr/ldap.cnd; abstract=true,\
 osgi.service;objectClass="javax.jcr.Repository"
 
 Import-Package:\
-org.argeo.cms.servlet,\
 javax.jcr.security,\
 org.h2;resolution:=optional;version="[1,3)",\
 org.postgresql;version="[42,43)";resolution:=optional,\
@@ -25,6 +24,7 @@ org.apache.jackrabbit.webdav.server,\
 org.apache.jackrabbit.webdav.simple,\
 junit.*;resolution:=optional,\
 javax.servlet.*;version="[3,5)",\
+org.eclipse.jetty.ee8.nested,\
 *
 
 Service-Component:\
@@ -32,7 +32,4 @@ OSGI-INF/repositoryContextsFactory.xml,\
 OSGI-INF/jcrRepositoryFactory.xml,\
 OSGI-INF/jcrFsProvider.xml,\
 OSGI-INF/jcrDeployment.xml,\
-OSGI-INF/jcrServletContext.xml,\
-OSGI-INF/dataServletContext.xml,\
-OSGI-INF/filesServletContext.xml,\
 OSGI-INF/filesServlet.xml,\

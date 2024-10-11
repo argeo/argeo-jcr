@@ -21,8 +21,7 @@ import org.argeo.api.cms.CmsConstants;
 import org.argeo.api.cms.CmsLog;
 import org.argeo.api.cms.CmsSession;
 import org.argeo.cms.auth.RemoteAuthUtils;
-import org.argeo.cms.servlet.ServletHttpRequest;
-import org.argeo.cms.servlet.javax.JavaxServletHttpRequest;
+import org.argeo.cms.javax.servlet.JavaxServletHttpRequest;
 import org.argeo.jcr.JcrUtils;
 
 /**

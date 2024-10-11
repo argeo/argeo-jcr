@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.argeo.api.cms.CmsAuth;
 import org.argeo.api.cms.CmsConstants;
-import org.argeo.cms.jcr.CmsJcrUtils;
 import org.argeo.jcr.JcrUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -100,7 +99,7 @@ public class LinkServlet extends HttpServlet {
 			Calendar lastUpdate = node.hasProperty(JCR_LAST_MODIFIED) ? node.getProperty(JCR_LAST_MODIFIED).getDate()
 					: null;
 			String url = getCanonicalUrl(node, request);
-			String imgUrl = null;
+//			String imgUrl = null;
 			// TODO support images
 //			loop: for (NodeIterator it = node.getNodes(); it.hasNext();) {
 //				// Takes the first found cms:image
@@ -120,8 +119,8 @@ public class LinkServlet extends HttpServlet {
 			writeMeta(buf, "og:url", url);
 			if (desc != null)
 				writeMeta(buf, "og:description", escapeHTML(desc));
-			if (imgUrl != null)
-				writeMeta(buf, "og:image", imgUrl);
+//			if (imgUrl != null)
+//				writeMeta(buf, "og:image", imgUrl);
 			if (lastUpdate != null)
 				writeMeta(buf, "og:updated_time", Long.toString(lastUpdate.getTime().getTime()));
 			buf.append("</head>");
