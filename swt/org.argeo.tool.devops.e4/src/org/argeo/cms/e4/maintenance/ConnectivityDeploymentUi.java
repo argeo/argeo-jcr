@@ -1,12 +1,12 @@
 package org.argeo.cms.e4.maintenance;
 
+import org.argeo.cms.jetty.JettyServer;
 import org.argeo.cms.swt.CmsSwtUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.HttpService;
 import org.osgi.service.useradmin.UserAdmin;
 
 class ConnectivityDeploymentUi extends AbstractOsgiComposite {
@@ -21,11 +21,10 @@ class ConnectivityDeploymentUi extends AbstractOsgiComposite {
 		StringBuffer text = new StringBuffer();
 		text.append("<span style='font-variant: small-caps;'>Provided Servers</span><br/>");
 
-		ServiceReference<HttpService> userAdminRef = bc.getServiceReference(HttpService.class);
-		if (userAdminRef != null) {
-			// FIXME use constants
-			Object httpPort = userAdminRef.getProperty("http.port");
-			Object httpsPort = userAdminRef.getProperty("https.port");
+		ServiceReference<JettyServer> jettyServerRef = bc.getServiceReference(JettyServer.class);
+		if (jettyServerRef != null) {
+			Object httpPort = bc.getService(jettyServerRef).getHttpPort();
+			Object httpsPort = bc.getService(jettyServerRef).getHttpsPort();
 			if (httpPort != null)
 				text.append("<b>http</b> ").append(httpPort).append("<br/>");
 			if (httpsPort != null)

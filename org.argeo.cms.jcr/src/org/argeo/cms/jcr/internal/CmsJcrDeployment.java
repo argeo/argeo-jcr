@@ -1,7 +1,6 @@
 package org.argeo.cms.jcr.internal;
 
 import static org.argeo.cms.osgi.DataModelNamespace.CMS_DATA_MODEL_NAMESPACE;
-import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +47,6 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 import org.osgi.util.tracker.ServiceTracker;
 
 /** Implementation of a CMS deployment. */
@@ -398,20 +396,20 @@ public class CmsJcrDeployment {
 //	}
 
 	protected void registerRepositoryServlets(String alias, Repository repository) {
-		registerRemotingServlet(alias, repository);
-		registerWebdavServlet(alias, repository);
+		// TODO make it work again
+//		registerRemotingServlet(alias, repository);
+//		registerWebdavServlet(alias, repository);
 	}
 
 	protected void registerWebdavServlet(String alias, Repository repository) {
 		CmsWebDavServlet webdavServlet = new CmsWebDavServlet(alias, repository);
 		Hashtable<String, String> ip = new Hashtable<>();
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsWebDavServlet.INIT_PARAM_RESOURCE_CONFIG, webDavConfig);
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsWebDavServlet.INIT_PARAM_RESOURCE_PATH_PREFIX,
-				"/" + alias);
+		ip.put(CmsWebDavServlet.INIT_PARAM_RESOURCE_CONFIG, webDavConfig);
+		ip.put(CmsWebDavServlet.INIT_PARAM_RESOURCE_PATH_PREFIX, "/" + alias);
 
-		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN, "/" + alias + "/*");
-		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
-				"(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH + "=" + CmsConstants.PATH_DATA + ")");
+//		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN, "/" + alias + "/*");
+//		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
+//				"(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH + "=" + CmsConstants.PATH_DATA + ")");
 		bc.registerService(Servlet.class, webdavServlet, ip);
 	}
 
@@ -420,10 +418,8 @@ public class CmsJcrDeployment {
 		Hashtable<String, String> ip = new Hashtable<>();
 		ip.put(CmsConstants.CN, alias);
 		// Properties ip = new Properties();
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_RESOURCE_PATH_PREFIX,
-				"/" + alias);
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_AUTHENTICATE_HEADER,
-				"Negotiate");
+		ip.put(CmsRemotingServlet.INIT_PARAM_RESOURCE_PATH_PREFIX, "/" + alias);
+		ip.put(CmsRemotingServlet.INIT_PARAM_AUTHENTICATE_HEADER, "Negotiate");
 
 		// Looks like a bug in Jackrabbit remoting init
 		Path tmpDir;
@@ -432,16 +428,14 @@ public class CmsJcrDeployment {
 		} catch (IOException e) {
 			throw new RuntimeException("Cannot create temp directory for remoting servlet", e);
 		}
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_HOME, tmpDir.toString());
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_TMP_DIRECTORY,
-				"remoting_" + alias);
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_PROTECTED_HANDLERS_CONFIG,
-				JcrHttpUtils.DEFAULT_PROTECTED_HANDLERS);
-		ip.put(HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX + CmsRemotingServlet.INIT_PARAM_CREATE_ABSOLUTE_URI, "false");
+		ip.put(CmsRemotingServlet.INIT_PARAM_HOME, tmpDir.toString());
+		ip.put(CmsRemotingServlet.INIT_PARAM_TMP_DIRECTORY, "remoting_" + alias);
+		ip.put(CmsRemotingServlet.INIT_PARAM_PROTECTED_HANDLERS_CONFIG, JcrHttpUtils.DEFAULT_PROTECTED_HANDLERS);
+		ip.put(CmsRemotingServlet.INIT_PARAM_CREATE_ABSOLUTE_URI, "false");
 
-		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN, "/" + alias + "/*");
-		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
-				"(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH + "=" + CmsConstants.PATH_JCR + ")");
+//		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN, "/" + alias + "/*");
+//		ip.put(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
+//				"(" + HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH + "=" + CmsConstants.PATH_JCR + ")");
 		bc.registerService(Servlet.class, remotingServlet, ip);
 	}
 
